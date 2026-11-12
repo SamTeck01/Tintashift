@@ -15,8 +15,8 @@ export const presets = [
 
 export type Product = { id: string; name: string; sub: string; price: number; img: string; badge?: string; items: string[] };
 export const products: Product[] = [
-  { id: "device", name: DEVICE_NAME, sub: "Change your nail colour in seconds", price: 99, img: "/img/device.jpg", badge: "The device",
-    items: ["Slide a fingertip in, it shifts to any colour", "Pick colours and draw designs in the Tintashift app", "USB-C rechargeable"] },
+  { id: "device", name: DEVICE_NAME, sub: "Recolours your TINTATips in seconds", price: 99, img: "/img/device.jpg", badge: "The device",
+    items: ["Slide a fingertip in, your TINTATip shifts to any colour", "Pick colours and draw designs in the Tintashift app", "USB-C rechargeable"] },
   { id: "kit", name: "Starter Kit", sub: `${DEVICE_NAME} + TINTATips`, price: 129, img: "/img/kit.jpg", badge: "Best value",
     items: [DEVICE_NAME, "24 TINTATips press-ons", "Sticky tabs, file and alcohol pads"] },
   { id: "tips", name: "TINTATips Refill", sub: "24 colour-shift press-ons", price: 38, img: "/img/step7.jpg",

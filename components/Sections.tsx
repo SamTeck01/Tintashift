@@ -85,7 +85,7 @@ export function Technology() {
         <motion.div {...reveal} className="tech-copy">
           <p className="eyebrow">Wearable beauty technology</p>
           <h2 className="display">Draw it.<br />Shift it.</h2>
-          <p className="lede">Pick a colour or draw a design in the Tintashift app, slide each fingertip into the device and watch the nail shift. Drawn in sketch, shifted with precision.</p>
+          <p className="lede">Pick a colour or draw a design in the Tintashift app, slide each fingertip into the device and watch the TINTATip shift. Drawn in sketch, shifted with precision.</p>
           <div className="tech-stats">
             <div><b>∞</b><span>colours</span></div>
             <div><b>1</b><span>finger at a time</span></div>
@@ -110,7 +110,7 @@ export function Outfits() {
         <motion.div {...reveal} className="outfit-vid"><video className="vid" src="/vid/outfits.mp4" autoPlay muted loop playsInline /></motion.div>
         <motion.div {...reveal} className="outfit-copy">
           <h2 className="display">Match the outfit,<br />not the appointment.</h2>
-          <p className="lede">Silk in the morning, denim by noon, black for the evening. Pick the colour of the outfit in the app and shift your nails to match. No salon, no remover.</p>
+          <p className="lede">Silk in the morning, denim by noon, black for the evening. Pick the colour of the outfit in the app and shift your TINTATips to match. No salon, no remover.</p>
           <a href="#shop" className="pill dark">Shop the device</a>
         </motion.div>
       </div>

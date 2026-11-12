@@ -56,7 +56,7 @@ export default function Hero() {
             </motion.span>
           </AnimatePresence>
         </h1>
-        <p className="shade-note">Slide a fingertip in. Your nail comes out in any colour you pick. No polish, no salon, no drying time.</p>
+        <p className="shade-note">Wear TINTATips press-ons, slide a fingertip in, and the tip comes out in any colour you pick. No polish, no salon, no drying time.</p>
         <div className="cta-row">
           <button className="pill dark" onClick={() => add()}>Add to bag <span className="price">${device.price}</span></button>
           <a className="pill outline" href="#how">How it works <span aria-hidden>↓</span></a>
