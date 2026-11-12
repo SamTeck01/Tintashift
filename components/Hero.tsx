@@ -1,73 +1,43 @@
 "use client";
-import Image from "next/image";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { shades, PRICE, DEVICE_NAME, type Shade } from "@/lib/shades";
-
-const Scene = dynamic(() => import("./Scene"), { ssr: false });
+import { useEffect, useRef, useState } from "react";
+import { presets, products, DEVICE_NAME, backdrop } from "@/lib/shades";
 import { useBag } from "./Bag";
 import Logo from "./Logo";
 
+const Scene = dynamic(() => import("./Scene"), { ssr: false });
 const ease = [0.22, 1, 0.36, 1] as const;
-
-function Tip({ s, active, onClick }: { s: Shade; active: boolean; onClick: () => void }) {
-  return (
-    <button className={`tip ${active ? "is-active" : ""}`} onClick={onClick} aria-label={`${s.name} shade`} aria-pressed={active}>
-      <span className="tip-shape" style={{ ["--c" as string]: s.hex, ["--d" as string]: s.deep }} />
-      <span className="tip-meta">
-        <span className="tip-no">{s.no}</span>
-        <span className="tip-name">{s.name}</span>
-        
-      </span>
-    </button>
-  );
-}
-
-export function Swatches({ active, onPick, size = 22 }: { active: number; onPick: (i: number) => void; size?: number }) {
-  return (
-    <div className="swatches">
-      {shades.map((s, i) => (
-        <button key={s.id} className={`dot ${i === active ? "is-active" : ""}`} onClick={() => onPick(i)}
-          aria-label={s.name} style={{ width: size, height: size, ["--c" as string]: s.hex }} />
-      ))}
-    </div>
-  );
-}
+const device = products[0];
 
 export default function Hero() {
-  const [i, setI] = useState(5);
-  const [tryOn, setTryOn] = useState(false);
+  const [hex, setHex] = useState(presets[5].hex);
+  const [custom, setCustom] = useState("#7c4dff");
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { count, add, flash } = useBag();
-  const s = shades[i];
+  const preset = presets.find((p) => p.hex === hex);
+  const label = preset ? preset.name : "Your colour";
+  const bg = backdrop(hex);
 
-  useEffect(() => {
-    document.documentElement.style.setProperty("--shade-bg", s.bg);
-    document.documentElement.style.setProperty("--shade", s.hex);
-  }, [s]);
+  useEffect(() => { document.documentElement.style.setProperty("--shade", hex); }, [hex]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setTryOn(false);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  const pickCustom = (v: string) => {
+    setCustom(v);
+    if (debounce.current) clearTimeout(debounce.current);
+    debounce.current = setTimeout(() => setHex(v), 220);
+  };
 
   return (
-    <section className={`hero ink-${s.ink}`} style={{ background: s.bg }}>
-      {/* preload all shade images so switching never flashes */}
+    <section className="hero" style={{ background: bg }}>
       <div className="hero-stack">
-        <div className={`scene ${tryOn ? "off" : ""}`}><Scene hex={s.hex} bg={s.bg} /></div>
-        {shades.map((x, k) => (
-          <Image key={`h-${x.id}`} src={`/img/hand-${x.id}.jpg`} alt="" fill sizes="100vw"
-            className={`hero-img hand ${k === i && tryOn ? "on" : ""}`} />
-        ))}
+        <div className="scene"><Scene hex={hex} bg={bg} /></div>
         <div className="hero-shade" />
       </div>
 
       <header className="nav">
-        <a href="#" className="nav-logo" onClick={() => setTryOn(false)}><Logo /></a>
+        <a href="#" className="nav-logo"><Logo /></a>
         <nav className="nav-links">
-          <a href="#shades">Shades</a><a href="#how">How to wear</a><a href="#about">About</a>
+          <a href="#shop">Shop</a><a href="#how">How it works</a><a href="#about">About</a>
         </nav>
         <button className="pill glass bag-btn" aria-label="Bag">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 7h12l-1 13H7L6 7z" /><path d="M9 7a3 3 0 0 1 6 0" /></svg>
@@ -75,51 +45,40 @@ export default function Hero() {
         </button>
       </header>
 
-      <AnimatePresence mode="wait">
-        {!tryOn ? (
-          <motion.div key="main" className="hero-copy" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .4 }}>
-            <p className="eyebrow">{s.no} · {DEVICE_NAME}</p>
-            <AnimatePresence mode="wait">
-              <motion.h1 key={s.id} className="shade-name"
-                initial={{ opacity: 0, y: 14, filter: "blur(6px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                exit={{ opacity: 0, y: -10, filter: "blur(6px)" }} transition={{ duration: .55, ease }}>
-                {s.name}
-              </motion.h1>
-            </AnimatePresence>
-            <p className="shade-note">{s.note} Slide a fingertip in. Watch it shift.</p>
-            <div className="cta-row">
-              <button className="pill dark" onClick={() => add()}>Add kit to bag <span className="price">${PRICE}</span></button>
-              <button className="pill outline" onClick={() => setTryOn(true)}>Try it on <span aria-hidden>↗</span></button>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div key="try" className="try-ui" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .4 }}>
-            <button className="back glass" onClick={() => setTryOn(false)} aria-label="Back">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-            </button>
-            <motion.div className="try-card glass" initial={{ opacity: 0, y: 20, scale: .97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: .6, ease, delay: .15 }}>
-              <p className="eyebrow">Try it on</p>
-              <AnimatePresence mode="wait">
-                <motion.h2 key={s.id} className="try-name" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: .35 }}>{s.name}</motion.h2>
-              </AnimatePresence>
-              <Swatches active={i} onPick={setI} />
-              <p className="try-caption">{s.no}. {s.name}</p>
-              <button className="pill dark wide" onClick={() => add()}>Add to bag <span className="price">${PRICE}</span></button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className="hero-copy">
+        <p className="eyebrow">{DEVICE_NAME}</p>
+        <h1 className="shade-name">Any colour.<br />
+          <AnimatePresence mode="wait">
+            <motion.span key={label + hex} className="hero-colour"
+              initial={{ opacity: 0, y: 12, filter: "blur(6px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -8, filter: "blur(6px)" }} transition={{ duration: .5, ease }}>
+              <i style={{ background: hex }} />{label}
+            </motion.span>
+          </AnimatePresence>
+        </h1>
+        <p className="shade-note">Slide a fingertip in. Your nail comes out in any colour you pick. No polish, no salon, no drying time.</p>
+        <div className="cta-row">
+          <button className="pill dark" onClick={() => add()}>Add to bag <span className="price">${device.price}</span></button>
+          <a className="pill outline" href="#how">How it works <span aria-hidden>↓</span></a>
+        </div>
+      </div>
+
+      <motion.div className="picker glass" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8, ease, delay: .3 }}>
+        <span className="picker-label">Pick a colour</span>
+        <div className="picker-dots">
+          {presets.map((p) => (
+            <button key={p.hex} className={`dot ${p.hex === hex ? "is-active" : ""}`} style={{ ["--c" as string]: p.hex }}
+              onClick={() => setHex(p.hex)} aria-label={p.name} title={p.name} />
+          ))}
+          <label className={`dot custom ${!preset ? "is-active" : ""}`} title="Any colour">
+            <input type="color" value={custom} onChange={(e) => pickCustom(e.target.value)} aria-label="Pick any colour" />
+          </label>
+        </div>
+        <span className="picker-hex">{hex.toUpperCase()}</span>
+      </motion.div>
 
       <AnimatePresence>
-        {!tryOn && (
-          <motion.div className="tips" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }} transition={{ duration: .6, ease }}>
-            {shades.map((x, k) => <Tip key={x.id} s={x} active={k === i} onClick={() => setI(k)} />)}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {flash && <motion.div className="toast glass" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>{flash} · {s.name}</motion.div>}
+        {flash && <motion.div className="toast glass" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>{flash}</motion.div>}
       </AnimatePresence>
     </section>
   );

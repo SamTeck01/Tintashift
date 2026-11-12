@@ -46,8 +46,8 @@ img{display:block}
 .bag-btn{justify-self:end;height:32px;padding:0 6px 0 12px;gap:7px;font-size:12px}
 .bag-count{background:rgba(255,255,255,.2);border-radius:999px;min-width:20px;height:20px;display:grid;place-items:center;font-size:11px}
 
-.hero-copy{position:absolute;z-index:4;top:15vh;right:28px;text-align:right;display:flex;flex-direction:column;align-items:flex-end}
-.shade-name{font-weight:300;font-size:clamp(56px,7.4vw,112px);letter-spacing:-.045em;line-height:1;margin:10px 0 10px}
+.hero-copy{position:absolute;z-index:4;top:14vh;right:28px;text-align:right;display:flex;flex-direction:column;align-items:flex-end}
+.shade-name{font-weight:300;font-size:clamp(48px,6vw,96px);letter-spacing:-.045em;line-height:1;margin:12px 0 14px;display:flex;flex-direction:column;align-items:inherit}
 .shade-note{font-size:13px;opacity:.8;max-width:300px}
 .cta-row{display:flex;gap:10px;margin-top:22px}
 
@@ -143,7 +143,16 @@ img{display:block}
 .foot nav{display:flex;gap:20px}
 .foot .logo{color:var(--ink)}
 
-.scene{position:absolute;inset:0;transition:opacity .7s var(--ease),transform 1s var(--ease)}
+.scene{position:absolute;inset:0}
+.hero-colour{display:inline-flex;align-items:center;gap:.18em}
+.hero-colour i{display:inline-block;width:.42em;height:.42em;border-radius:50%;box-shadow:inset 0 -3px 8px rgba(0,0,0,.3),0 0 0 2px rgba(255,255,255,.7);transition:background .5s}
+.picker{position:absolute;z-index:4;left:50%;bottom:28px;translate:-50% 0;display:flex;align-items:center;gap:18px;padding:10px 12px 10px 20px;border-radius:999px;color:#fff;background:rgba(255,255,255,.1)}
+.picker-label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.8;white-space:nowrap}
+.picker-dots{display:flex;gap:10px;align-items:center}
+.picker .dot{width:30px;height:30px}
+.picker-hex{font-size:11px;font-variant-numeric:tabular-nums;opacity:.7;min-width:62px;background:rgba(0,0,0,.2);padding:8px 10px;border-radius:999px;text-align:center}
+.dot.custom{position:relative;background:conic-gradient(#f44,#fd4,#4f6,#4df,#46f,#e4f,#f44);cursor:pointer}
+.dot.custom input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .scene.off{opacity:0;transform:scale(1.08);pointer-events:none}
 .shop{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px}
 .prod{display:flex;flex-direction:column;background:#fff;border-radius:var(--r);overflow:hidden}
@@ -165,8 +174,12 @@ img{display:block}
   .nav-links{display:none}
   .hero{height:100svh;min-height:600px}
   .hero-img{object-position:28% 50%}
-  .hero-copy{top:auto;bottom:178px;left:16px;right:16px;align-items:flex-start;text-align:left}
-  .shade-name{font-size:64px}
+  .picker{left:16px;right:16px;translate:none;bottom:16px;flex-wrap:wrap;justify-content:center;gap:10px;border-radius:24px;padding:12px}
+  .picker .dot{width:26px;height:26px}
+  .picker-dots{gap:7px;flex-wrap:wrap;justify-content:center}
+  .picker-hex{display:none}
+  .hero-copy{top:auto;bottom:150px;left:16px;right:16px;align-items:flex-start;text-align:left}
+  .shade-name{font-size:48px}
   .cta-row{margin-top:16px}
   .tips{justify-content:space-between;padding:0 16px 18px;gap:0}
   .tip-shape{width:40px}

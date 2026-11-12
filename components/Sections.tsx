@@ -2,9 +2,8 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { shades, products, DEVICE_NAME } from "@/lib/shades";
+import { products, DEVICE_NAME } from "@/lib/shades";
 import { useBag } from "./Bag";
-import { Swatches } from "./Hero";
 import Logo from "./Logo";
 
 const reveal = {
@@ -14,13 +13,13 @@ const reveal = {
   transition: { duration: .8, ease: [0.22, 1, 0.36, 1] as const },
 };
 
-export function ShadesGrid() {
+export function Shop() {
   const { add } = useBag();
   return (
-    <section id="shades" className="sec light">
+    <section id="shop" className="sec light">
       <div className="sec-head">
-        <motion.h2 {...reveal} className="display">Six shades.<br />One kit.</motion.h2>
-        <motion.p {...reveal} className="lede">The {DEVICE_NAME} shifts every TINTATips nail between all six shades and any design you draw in the app. Buy it once and wear every colour.</motion.p>
+        <motion.h2 {...reveal} className="display">One device.<br />Every colour.</motion.h2>
+        <motion.p {...reveal} className="lede">The {DEVICE_NAME} recolours TINTATips press-ons to any colour you pick in the app, whenever you want. Buy it once and never buy polish again.</motion.p>
       </div>
       <div className="shop">
         {products.map((p, k) => (
@@ -42,13 +41,6 @@ export function ShadesGrid() {
           </motion.article>
         ))}
       </div>
-      <motion.div {...reveal} className="shade-strip">
-        {shades.map((s) => (
-          <div key={s.id} className="strip-item" style={{ background: s.bg, color: s.ink === "light" ? "#fff" : "#1a1216" }}>
-            <span>{s.no}</span><b>{s.name}</b>
-          </div>
-        ))}
-      </motion.div>
     </section>
   );
 }
@@ -92,10 +84,10 @@ export function Technology() {
       <div className="tech">
         <motion.div {...reveal} className="tech-copy">
           <p className="eyebrow">Wearable beauty technology</p>
-          <h2 className="display">One device.<br />Every shade.</h2>
+          <h2 className="display">Draw it.<br />Shift it.</h2>
           <p className="lede">Pick a colour or draw a design in the Tintashift app, slide each fingertip into the device and watch the nail shift. Drawn in sketch, shifted with precision.</p>
           <div className="tech-stats">
-            <div><b>6</b><span>signature shades</span></div>
+            <div><b>∞</b><span>colours</span></div>
             <div><b>1</b><span>finger at a time</span></div>
             <div><b>0</b><span>polish, 0 dry time</span></div>
           </div>
@@ -110,40 +102,6 @@ export function Technology() {
   );
 }
 
-const tones = [
-  { id: "Fair", f: "brightness(1.08) saturate(.9)" },
-  { id: "Light", f: "none" },
-  { id: "Medium", f: "brightness(.86) saturate(1.15) sepia(.18)" },
-  { id: "Deep", f: "brightness(.62) saturate(1.2) sepia(.3)" },
-];
-
-export function TryOnTones() {
-  const [i, setI] = useState(2);
-  const [t, setT] = useState(1);
-  const s = shades[i];
-  return (
-    <section className="sec light">
-      <div className="tones">
-        <motion.div {...reveal} className="tones-copy">
-          <h2 className="display">See the colour on a hand before it reaches yours.</h2>
-          <div className="tone-tabs" role="tablist">
-            {tones.map((x, k) => (
-              <button key={x.id} role="tab" aria-selected={k === t} className={k === t ? "on" : ""} onClick={() => setT(k)}>{x.id}</button>
-            ))}
-          </div>
-          <Swatches active={i} onPick={setI} size={26} />
-          <p className="try-caption dark">{s.no}. {s.name} · {tones[t].id}</p>
-        </motion.div>
-        <motion.div {...reveal} className="tones-img" style={{ background: s.bg }}>
-          {shades.map((x, k) => (
-            <Image key={x.id} src={`/img/hand-${x.id}.jpg`} alt="" fill sizes="(max-width: 700px) 100vw, 55vw"
-              className={`hero-img ${k === i ? "on" : ""}`} style={{ filter: tones[t].f }} />
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
 
 export function Outfits() {
   return (
@@ -152,8 +110,8 @@ export function Outfits() {
         <motion.div {...reveal} className="outfit-vid"><video className="vid" src="/vid/outfits.mp4" autoPlay muted loop playsInline /></motion.div>
         <motion.div {...reveal} className="outfit-copy">
           <h2 className="display">Match the outfit,<br />not the appointment.</h2>
-          <p className="lede">Silk in the morning, denim by noon, black for the evening. Shift your nails to match without a salon visit or a drop of remover.</p>
-          <a href="#shades" className="pill dark">Shop the shades</a>
+          <p className="lede">Silk in the morning, denim by noon, black for the evening. Pick the colour of the outfit in the app and shift your nails to match. No salon, no remover.</p>
+          <a href="#shop" className="pill dark">Shop the device</a>
         </motion.div>
       </div>
     </section>
@@ -165,7 +123,7 @@ export function Newsletter() {
   return (
     <section className="sec light news">
       <motion.div {...reveal} className="news-inner">
-        <h2 className="display">New shades first.</h2>
+        <h2 className="display">New drops first.</h2>
         <p className="lede">Drops, restocks and early access. No spam, ever.</p>
         {done ? <p className="news-done">You’re on the list. ✦</p> : (
           <form className="news-form" onSubmit={(e) => { e.preventDefault(); setDone(true); }}>
@@ -183,7 +141,7 @@ export function Footer() {
     <footer className="foot">
       <Logo />
       <p>Wearable Beauty Technology · live in colour</p>
-      <nav><a href="#shades">Shades</a><a href="#how">How to wear</a><a href="#about">About</a></nav>
+      <nav><a href="#shop">Shop</a><a href="#how">How it works</a><a href="#about">About</a></nav>
       <small>© {new Date().getFullYear()} Tintashift</small>
     </footer>
   );
