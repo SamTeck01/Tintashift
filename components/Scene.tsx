@@ -1,7 +1,9 @@
 "use client";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer, RoundedBox } from "@react-three/drei";
-import { useMemo, useRef, useState } from "react";
+import { ContactShadows, Environment, Lightformer, RoundedBox, useGLTF } from "@react-three/drei";
+import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
+import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { Suspense, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 const REST_X = 2.0;   // fingertip resting just outside the opening (nail visible)
@@ -27,22 +29,55 @@ function useNailGeometry() {
   }, []);
 }
 
+const DBG = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+const AXIS = (DBG?.get("axis") ?? "x") as "x" | "y" | "z";
+const CURL = Number(DBG?.get("sign") ?? -1);
+const DORSAL = Number(DBG?.get("dorsal") ?? 1);
+useGLTF.preload("/models/hand-right.glb");
+
+/* Rigged hand (WebXR generic hand, MIT). Posed: index finger extended, others curled.
+   Output frame: index fingertip at origin, finger pointing −x, back of the finger facing +y. */
 function Finger({ nailMat }: { nailMat: React.RefObject<THREE.MeshPhysicalMaterial | null> }) {
+  const { scene } = useGLTF("/models/hand-right.glb");
   const nail = useNailGeometry();
-  const skin = (
-    <meshPhysicalMaterial color="#e2b199" roughness={0.48} sheen={1} sheenRoughness={0.6} sheenColor="#ffd8c4" clearcoat={0.15} clearcoatRoughness={0.6} />
-  );
-  // Built with the fingertip at x = 0, finger extending toward +x.
+  const h = useMemo(() => {
+    const root = cloneSkinned(scene);
+    const skin = new THREE.MeshPhysicalMaterial({ color: "#e2b199", roughness: 0.5, sheen: 1, sheenRoughness: 0.6, sheenColor: new THREE.Color("#ffd8c4"), clearcoat: 0.1 });
+    root.traverse((o) => { if ((o as THREE.Mesh).isMesh) { const m = o as THREE.Mesh; m.material = skin; m.castShadow = true;
+      const g = mergeVertices(m.geometry.deleteAttribute("normal") && m.geometry, 1e-4); g.computeVertexNormals(); m.geometry = g; m.frustumCulled = false; } });
+    const b = (n: string) => root.getObjectByName(n)!;
+    const curl = (f: string, a: number) => ["proximal", "intermediate", "distal"].forEach((s, i) => { b(`${f}-finger-phalanx-${s}`).rotation[AXIS] += CURL * a * [1, 1.15, 0.8][i]; });
+    curl("middle", 1.35); curl("ring", 1.45); curl("pinky", 1.5);
+    curl("index", 0.06);
+    b("thumb-phalanx-proximal").rotation[AXIS] += CURL * 0.5;
+    b("thumb-phalanx-distal").rotation[AXIS] += CURL * 0.6;
+    root.updateMatrixWorld(true);
+    const P = (n: string) => b(n).getWorldPosition(new THREE.Vector3());
+    const tip = P("index-finger-tip"), dist = P("index-finger-phalanx-distal");
+    const dir = tip.clone().sub(dist).normalize();
+    const w = P("wrist"), im = P("index-finger-phalanx-proximal"), pm = P("pinky-finger-phalanx-proximal");
+    const palm = new THREE.Vector3().subVectors(im, w).cross(new THREE.Vector3().subVectors(pm, w)).normalize().multiplyScalar(DORSAL);
+    const up = palm.sub(dir.clone().multiplyScalar(palm.dot(dir))).normalize();
+    // rotate so dir → −x and up → +y
+    const fwd = dir.clone().negate();
+    const basis = new THREE.Matrix4().makeBasis(fwd, up, new THREE.Vector3().crossVectors(fwd, up));
+    const q = new THREE.Quaternion().setFromRotationMatrix(basis).invert();
+    // nail: centred on the distal pad, on the back of the finger
+    const len = tip.distanceTo(dist);
+    const centre = dist.clone().lerp(tip, 0.82).add(up.clone().multiplyScalar(len * Number(DBG?.get("lift") ?? 0.62)));
+    const nb = new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(dir, up), dir, up);
+    const nq = new THREE.Quaternion().setFromRotationMatrix(nb);
+    return { root, q, tip, centre, nq, len, scale: 0.33 / (len * 1.5) };
+  }, [scene]);
   return (
-    <group rotation={[0.85, 0, 0.1]}>
-      <mesh position={[1.75, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <capsuleGeometry args={[0.165, 3.2, 16, 48]} />{skin}
-      </mesh>
-      {/* TINTATip press-on, lying on top of the fingertip, tip pointing −x */}
-      <group position={[0.22, 0.15, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <mesh geometry={nail} rotation={[-Math.PI / 2, 0, 0]} scale={[0.47, 0.5, 0.6]} castShadow>
-          <meshPhysicalMaterial ref={nailMat} roughness={0.08} clearcoat={1} clearcoatRoughness={0.03} />
-        </mesh>
+    <group rotation={[1.15, 0, 0.1]}>
+      <group scale={h.scale} quaternion={h.q}>
+        <group position={h.tip.clone().negate()}>
+          <primitive object={h.root} />
+          <mesh geometry={nail} position={h.centre} quaternion={h.nq} scale={[h.len * 1.25, h.len * 1.35, h.len * 1.2]} castShadow>
+            <meshPhysicalMaterial ref={nailMat} roughness={0.08} clearcoat={1} clearcoatRoughness={0.03} />
+          </mesh>
+        </group>
       </group>
     </group>
   );
@@ -129,7 +164,7 @@ export default function Scene({ hex, bg }: { hex: string; bg: string }) {
     <Canvas shadows dpr={[1, 1.75]} camera={{ position: [0, 0.6, 6.4], fov: 30 }} gl={{ antialias: true, alpha: true }}>
       <ambientLight intensity={0.85} />
       <directionalLight position={[2, 5, 4]} intensity={1.5} castShadow shadow-mapSize={[1024, 1024]} />
-      <Rig><Device hex={hex} /></Rig>
+      <Suspense fallback={null}><Rig><Device hex={hex} /></Rig></Suspense>
       <ContactShadows position={[0, -0.75, 0]} opacity={0.5} scale={12} blur={2.4} far={3} color="#000" />
       <Environment resolution={256}>
         <Lightformer form="rect" intensity={3} position={[0, 4, 2]} scale={[8, 2, 1]} />
