@@ -1,8 +1,11 @@
 "use client";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { shades, PRICE, type Shade } from "@/lib/shades";
+import { shades, PRICE, DEVICE_NAME, type Shade } from "@/lib/shades";
+
+const Scene = dynamic(() => import("./Scene"), { ssr: false });
 import { useBag } from "./Bag";
 import Logo from "./Logo";
 
@@ -15,7 +18,7 @@ function Tip({ s, active, onClick }: { s: Shade; active: boolean; onClick: () =>
       <span className="tip-meta">
         <span className="tip-no">{s.no}</span>
         <span className="tip-name">{s.name}</span>
-        <span className="tip-price">${PRICE}</span>
+        
       </span>
     </button>
   );
@@ -53,10 +56,7 @@ export default function Hero() {
     <section className={`hero ink-${s.ink}`} style={{ background: s.bg }}>
       {/* preload all shade images so switching never flashes */}
       <div className="hero-stack">
-        {shades.map((x, k) => (
-          <Image key={x.id} src={`/img/hero-${x.id}.jpg`} alt="" fill priority={k === 5} sizes="100vw"
-            className={`hero-img ${k === i && !tryOn ? "on" : ""}`} />
-        ))}
+        <div className={`scene ${tryOn ? "off" : ""}`}><Scene hex={s.hex} bg={s.bg} /></div>
         {shades.map((x, k) => (
           <Image key={`h-${x.id}`} src={`/img/hand-${x.id}.jpg`} alt="" fill sizes="100vw"
             className={`hero-img hand ${k === i && tryOn ? "on" : ""}`} />
@@ -78,7 +78,7 @@ export default function Hero() {
       <AnimatePresence mode="wait">
         {!tryOn ? (
           <motion.div key="main" className="hero-copy" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .4 }}>
-            <p className="eyebrow">{s.no} · Smart press-on</p>
+            <p className="eyebrow">{s.no} · {DEVICE_NAME}</p>
             <AnimatePresence mode="wait">
               <motion.h1 key={s.id} className="shade-name"
                 initial={{ opacity: 0, y: 14, filter: "blur(6px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -86,9 +86,9 @@ export default function Hero() {
                 {s.name}
               </motion.h1>
             </AnimatePresence>
-            <p className="shade-note">{s.note} Colour-shifting, chip-free. 24 tips.</p>
+            <p className="shade-note">{s.note} Slide a fingertip in. Watch it shift.</p>
             <div className="cta-row">
-              <button className="pill dark" onClick={() => add()}>Add to bag <span className="price">${PRICE}</span></button>
+              <button className="pill dark" onClick={() => add()}>Add kit to bag <span className="price">${PRICE}</span></button>
               <button className="pill outline" onClick={() => setTryOn(true)}>Try it on <span aria-hidden>↗</span></button>
             </div>
           </motion.div>

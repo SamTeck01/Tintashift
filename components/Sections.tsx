@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { shades, PRICE } from "@/lib/shades";
+import { shades, products, DEVICE_NAME } from "@/lib/shades";
 import { useBag } from "./Bag";
 import { Swatches } from "./Hero";
 import Logo from "./Logo";
@@ -19,27 +19,36 @@ export function ShadesGrid() {
   return (
     <section id="shades" className="sec light">
       <div className="sec-head">
-        <motion.h2 {...reveal} className="display">Six shades.<br />One finish.</motion.h2>
-        <motion.p {...reveal} className="lede">Every TINTATips set shifts between shades with a touch of the wand. Pick the one you start with.</motion.p>
+        <motion.h2 {...reveal} className="display">Six shades.<br />One kit.</motion.h2>
+        <motion.p {...reveal} className="lede">The {DEVICE_NAME} shifts every TINTATips nail between all six shades and any design you draw in the app. Buy it once and wear every colour.</motion.p>
       </div>
-      <div className="cards">
-        {shades.map((s, k) => (
-          <motion.article key={s.id} className="card" {...reveal} transition={{ ...reveal.transition, delay: k * .06 }}>
-            <div className="card-img" style={{ background: s.bg }}>
-              <Image src={`/img/${k % 2 ? "hand" : "hero"}-${s.id}.jpg`} alt={`${s.name} press-on nails`} fill sizes="(max-width: 700px) 80vw, 33vw" />
-              <span className="card-no">{s.no}</span>
-              {k % 2 === 1 && <span className="card-tag glass">Try on</span>}
+      <div className="shop">
+        {products.map((p, k) => (
+          <motion.article key={p.id} className={`prod ${k === 0 ? "feat" : ""}`} {...reveal} transition={{ ...reveal.transition, delay: k * .08 }}>
+            <div className="prod-img">
+              <Image src={p.img} alt={p.name} fill sizes="(max-width: 760px) 100vw, 40vw" />
+              {p.badge && <span className="card-tag glass">{p.badge}</span>}
             </div>
-            <div className="card-foot">
-              <div><h3>{s.name}</h3><p>{s.note}</p></div>
-              <span className="card-price">${PRICE}</span>
+            <div className="prod-body">
+              <div className="card-foot">
+                <div><h3>{p.name}</h3><p>{p.sub}</p></div>
+                <span className="card-price">${p.price}</span>
+              </div>
+              <ul>{p.items.map((x) => <li key={x}>{x}</li>)}</ul>
+              <button className="pill dark sm" onClick={() => add()}>Add to bag
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 7h12l-1 13H7L6 7z" /><path d="M9 7a3 3 0 0 1 6 0" /></svg>
+              </button>
             </div>
-            <button className="pill dark sm" onClick={() => add()}>Add to bag
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 7h12l-1 13H7L6 7z" /><path d="M9 7a3 3 0 0 1 6 0" /></svg>
-            </button>
           </motion.article>
         ))}
       </div>
+      <motion.div {...reveal} className="shade-strip">
+        {shades.map((s) => (
+          <div key={s.id} className="strip-item" style={{ background: s.bg, color: s.ink === "light" ? "#fff" : "#1a1216" }}>
+            <span>{s.no}</span><b>{s.name}</b>
+          </div>
+        ))}
+      </motion.div>
     </section>
   );
 }
@@ -83,11 +92,11 @@ export function Technology() {
       <div className="tech">
         <motion.div {...reveal} className="tech-copy">
           <p className="eyebrow">Wearable beauty technology</p>
-          <h2 className="display">One wand.<br />Every shade.</h2>
-          <p className="lede">Pick a colour in the Tintashift app, touch the wand to each tip and watch it shift. Drawn in sketch, shifted with precision.</p>
+          <h2 className="display">One device.<br />Every shade.</h2>
+          <p className="lede">Pick a colour or draw a design in the Tintashift app, slide each fingertip into the device and watch the nail shift. Drawn in sketch, shifted with precision.</p>
           <div className="tech-stats">
             <div><b>6</b><span>signature shades</span></div>
-            <div><b>3s</b><span>per nail to shift</span></div>
+            <div><b>1</b><span>finger at a time</span></div>
             <div><b>0</b><span>polish, 0 dry time</span></div>
           </div>
         </motion.div>
