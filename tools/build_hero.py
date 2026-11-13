@@ -68,7 +68,7 @@ for s in SETS:
         save("device", im, dm * .55, spec, 1 - (1 - np.clip(shade, 0, 1)) * (1 - above) * fade)
         matte, shade = matte * above, 1 - (1 - np.clip(shade, 0, 1)) * above
     gd = a[..., 1] - np.maximum(a[..., 0], a[..., 2])
-    tip = ss(.05, .16, gd) * ndi.maximum_filter(matte, 9)
+    tip = ss(.015, .09, gd) * ndi.maximum_filter(matte, 9)
     keep = np.maximum(matte, tip)
     low = int(np.where(tip > .5)[0].max())
     layers[s] = {"dy": min(0, CLEAR_Y - low)}

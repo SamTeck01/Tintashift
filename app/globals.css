@@ -38,7 +38,9 @@ img{display:block}
 
 .nav{position:absolute;z-index:5;top:0;left:0;right:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:22px 28px}
 .logo{display:inline-flex;align-items:center;gap:8px}
-.logo-word{font-size:12px;letter-spacing:.28em;font-weight:500}
+.logo{gap:7px}
+.logo-mark{display:block;height:30px;width:auto}
+.logo-word{font-size:21px;letter-spacing:-.02em;font-weight:600;line-height:1}
 .logo-word b{font-weight:300}
 .nav-links{display:flex;gap:30px;font-size:12px}
 .nav-links a{opacity:.85;transition:opacity .2s}
