@@ -1,8 +1,6 @@
 "use client";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer, RoundedBox, useGLTF } from "@react-three/drei";
-import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { ContactShadows, Environment, Lightformer, useGLTF, useTexture } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
@@ -17,127 +15,76 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const seg = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
 const smooth = (t: number) => t * t * (3 - 2 * t);
 
-/* ---------- TINTATip geometry: almond shell, tip along +y, normal +z ---------- */
-function makeNailGeometry() {
-  const g = new THREE.SphereGeometry(1, 96, 64);
-  const p = g.attributes.position as THREE.BufferAttribute;
-  for (let i = 0; i < p.count; i++) {
-    let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
-    const t = (y + 1) / 2;
-    x *= 0.36 * (1 - Math.pow(t, 2.6) * 0.62);
-    y *= 0.5;
-    z *= 0.06;
-    z -= x * x * 0.9;
-    p.setXYZ(i, x, y, z);
-  }
-  g.computeVertexNormals();
-  return g;
-}
-
-/* Nail material whose French tip takes the shared shift colour. */
-function makeNailMaterial(base: string, opts: Partial<THREE.MeshPhysicalMaterialParameters> = {}) {
-  const m = new THREE.MeshPhysicalMaterial({ color: base, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.04, ...opts });
+/* ---------- Signature TINTATips (AI-reconstructed from product photos) ----------
+   Mesh frame: length along y (−0.5 tip … +0.5 cuticle), front +z.
+   Vertex colour r marks raised decorations (bow / stars / stones). */
+function makeTipMaterial(base: string, deco: string, decoMetal: number, opts: THREE.MeshPhysicalMaterialParameters = {}) {
+  const m = new THREE.MeshPhysicalMaterial({ color: base, roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.05, ...opts });
+  const decoCol = { value: new THREE.Color(deco) }, metal = { value: decoMetal };
   m.onBeforeCompile = (s) => {
-    s.uniforms.uTip = tipUniform;
+    s.uniforms.uTip = tipUniform; s.uniforms.uDeco = decoCol; s.uniforms.uDecoMetal = metal;
     s.vertexShader = s.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying vec3 vNail;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvNail = position;");
+      .replace("#include <common>", "#include <common>\nattribute vec3 color;\nvarying vec3 vNail;\nvarying float vDeco;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvNail = position; vDeco = color.r;");
     s.fragmentShader = s.fragmentShader
-      .replace("#include <common>", "#include <common>\nvarying vec3 vNail;\nuniform vec3 uTip;")
-      .replace(
-        "vec4 diffuseColor = vec4( diffuse, opacity );",
-        `float smile = 0.1 + vNail.x * vNail.x * 2.2;
-         float tipMask = smoothstep(smile - 0.012, smile + 0.012, vNail.y);
-         vec4 diffuseColor = vec4( mix(diffuse, uTip, tipMask), opacity );`,
-      );
+      .replace("#include <common>", "#include <common>\nvarying vec3 vNail;\nvarying float vDeco;\nuniform vec3 uTip;\nuniform vec3 uDeco;\nuniform float uDecoMetal;")
+      .replace("vec4 diffuseColor = vec4( diffuse, opacity );",
+        `float smile = -0.16 - vNail.x * vNail.x * 1.6;
+         float tipMask = 1.0 - smoothstep(smile - 0.012, smile + 0.012, vNail.y);
+         float deco = smoothstep(0.35, 0.65, vDeco);
+         vec4 diffuseColor = vec4( mix(mix(diffuse, uTip, tipMask), uDeco, deco), opacity );`)
+      .replace("#include <metalnessmap_fragment>", "#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, uDecoMetal, deco);")
+      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.16, deco);");
   };
   return m;
 }
-
-/* ---------- Signature decorations (in nail-local space) ---------- */
-const pearlMat = new THREE.MeshPhysicalMaterial({ color: "#fbf6f2", roughness: 0.15, clearcoat: 1, iridescence: 0.6, sheen: 1 });
-const bowMat = new THREE.MeshPhysicalMaterial({ color: "#f1cfdd", roughness: 0.25, clearcoat: 1, sheen: 1, sheenColor: new THREE.Color("#fff") });
+const si001 = makeTipMaterial("#b9a6e2", "#f3d3e0", 0.0);
+const si002 = makeTipMaterial("#a8959f", "#eceaf0", 1.0, { metalness: 0.35, roughness: 0.25, iridescence: 0.8, iridescenceIOR: 1.7 });
 const chromeMat = new THREE.MeshPhysicalMaterial({ color: "#e8e8ee", metalness: 1, roughness: 0.12 });
-const crystalGemMat = new THREE.MeshPhysicalMaterial({ color: "#ffffff", transmission: 1, thickness: 0.2, ior: 2.2, roughness: 0, iridescence: 1, flatShading: true });
-const redGemMat = new THREE.MeshPhysicalMaterial({ color: "#b4231c", transmission: 0.6, thickness: 0.3, ior: 1.8, roughness: 0.05, flatShading: true });
-
-const starGeo = (() => {
-  const s = new THREE.Shape();
-  for (let i = 0; i < 8; i++) {
-    const r = i % 2 ? 0.035 : 0.11, a = (i / 8) * Math.PI * 2 + Math.PI / 2;
-    const fn = i ? "lineTo" : "moveTo";
-    s[fn](Math.cos(a) * r, Math.sin(a) * r);
-  }
-  return new THREE.ExtrudeGeometry(s, { depth: 0.02, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.01, bevelSegments: 2 });
-})();
-
-function Bow() {
-  return (
-    <group position={[0, -0.22, 0.075]}>
-      <mesh material={bowMat} position={[-0.11, 0, 0]} rotation={[0, 0, 0.35]} scale={[0.12, 0.08, 0.05]}><sphereGeometry args={[1, 24, 16]} /></mesh>
-      <mesh material={bowMat} position={[0.11, 0, 0]} rotation={[0, 0, -0.35]} scale={[0.12, 0.08, 0.05]}><sphereGeometry args={[1, 24, 16]} /></mesh>
-      <mesh material={crystalGemMat} position={[0, 0, 0.04]} scale={0.045}><octahedronGeometry /></mesh>
-      <mesh material={pearlMat} position={[0.06, -0.2, 0.0]} scale={0.03}><sphereGeometry args={[1, 16, 12]} /></mesh>
-      <mesh material={pearlMat} position={[-0.08, -0.12, 0.0]} scale={0.022}><sphereGeometry args={[1, 16, 12]} /></mesh>
-    </group>
-  );
-}
-
-function Stars({ gem }: { gem: boolean }) {
-  return (
-    <group position={[0, -0.12, 0.07]}>
-      <mesh geometry={starGeo} material={chromeMat} scale={gem ? 1.5 : 0.9} />
-      <mesh geometry={starGeo} material={chromeMat} position={[0.1, -0.16, 0]} scale={0.5} />
-      {gem && <mesh material={redGemMat} position={[0, 0, 0.04]} scale={[0.05, 0.08, 0.03]}><boxGeometry /></mesh>}
-      {gem && <mesh material={crystalGemMat} position={[-0.11, -0.1, 0]} scale={0.03}><octahedronGeometry /></mesh>}
-    </group>
-  );
-}
-
-/* ---------- The ten floating Signature tips (SI001 + SI002) ---------- */
-const nailGeo = makeNailGeometry();
-const si001 = makeNailMaterial("#bfaee4");
-const si002 = makeNailMaterial("#a3949e", { metalness: 0.45, roughness: 0.22, iridescence: 0.7, iridescenceIOR: 1.6 });
+const crystalGemMat = new THREE.MeshPhysicalMaterial({ color: "#ffffff", metalness: 0.2, roughness: 0.02, iridescence: 1, flatShading: true });
+useGLTF.preload("/models/si001.glb", false, true);
+useGLTF.preload("/models/si002.glb", false, true);
+useGLTF.preload("/models/hand.glb", false, true);
 
 const FLOAT = Array.from({ length: 10 }, (_, i) => {
-  const a = (i / 10) * Math.PI * 2;
+  const a = (i / 10) * Math.PI * 2 + 0.3;
   return {
     series: i % 2 ? 2 : 1,
-    deco: i % 3 === 0,
-    p: [Math.cos(a) * 2.55, Math.sin(a) * 1.15 + 0.15, Math.sin(a * 2) * 0.6 - 0.4] as const,
-    r: [0.3 + Math.sin(i) * 0.3, Math.cos(i * 1.7) * 0.5, a + Math.PI / 2 + Math.sin(i) * 0.4] as const,
-    s: 0.85 + (i % 4) * 0.08,
+    p: [Math.cos(a) * 3.0, Math.sin(a) * 1.35 + 0.25, Math.sin(a * 2) * 0.5 - 0.6] as const,
+    r: [Math.sin(i) * 0.25, Math.cos(i * 1.7) * 0.45, a + Math.PI / 2 + Math.sin(i) * 0.4] as const,
+    s: 0.9 + (i % 4) * 0.08,
   };
 });
 
+function geoOf(scene: THREE.Object3D) {
+  let g: THREE.BufferGeometry | null = null;
+  scene.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh && !g) g = m.geometry; });
+  const out = (g as unknown as THREE.BufferGeometry).clone();
+  out.computeVertexNormals();
+  return out;
+}
+
 function FloatingTips({ progress }: { progress: React.RefObject<number> }) {
-  const g = useRef<THREE.Group>(null!);
-  const items = useRef<THREE.Group[]>([]);
+  const g1 = useGLTF("/models/si001.glb", false, true), g2 = useGLTF("/models/si002.glb", false, true);
+  const geo1 = useMemo(() => geoOf(g1.scene), [g1]), geo2 = useMemo(() => geoOf(g2.scene), [g2]);
+  const items = useRef<THREE.Mesh[]>([]);
   useFrame(({ clock }) => {
     const p = progress.current ?? 0;
-    const out = smooth(seg(p, 0.18, 0.42));      // tips scatter away as the hand arrives
-    const back = smooth(seg(p, 0.78, 1));        // and return for the final line-up
+    const k = smooth(seg(p, 0.14, 0.4)) * (1 - smooth(seg(p, 0.76, 0.98)));
     const t = clock.elapsedTime;
-    g.current.rotation.z = t * 0.04;
     items.current.forEach((m, i) => {
       if (!m) return;
-      const f = FLOAT[i];
-      const k = out * (1 - back);
-      const spread = 1 + k * 1.6;
-      m.position.set(f.p[0] * spread, f.p[1] * spread + Math.sin(t * 0.9 + i) * 0.06, f.p[2] + k * 2.5);
-      m.rotation.set(f.r[0] + Math.sin(t * 0.5 + i) * 0.12, f.r[1] + t * 0.2, f.r[2]);
-      m.scale.setScalar(f.s * (1 - k * 0.6));
-      m.visible = k < 0.98;
+      const f = FLOAT[i], spread = 1 + k * 1.5;
+      m.position.set(f.p[0] * spread, f.p[1] * spread + Math.sin(t * 0.9 + i) * 0.07, f.p[2] + k * 2);
+      m.rotation.set(f.r[0] + Math.sin(t * 0.5 + i) * 0.15, f.r[1] + Math.sin(t * 0.35 + i * 2) * 0.5, f.r[2]);
+      m.scale.setScalar(f.s * (1 - k * 0.7));
+      m.visible = k < 0.97;
     });
   });
   return (
-    <group ref={g}>
+    <group>
       {FLOAT.map((f, i) => (
-        <group key={i} ref={(el) => { if (el) items.current[i] = el; }}>
-          <mesh geometry={nailGeo} material={f.series === 1 ? si001 : si002} castShadow />
-          {f.deco && (f.series === 1 ? <Bow /> : <Stars gem />)}
-          {!f.deco && f.series === 2 && <Stars gem={false} />}
-        </group>
+        <mesh key={i} ref={(el) => { if (el) items.current[i] = el; }} geometry={f.series === 1 ? geo1 : geo2} material={f.series === 1 ? si001 : si002} castShadow />
       ))}
     </group>
   );
@@ -149,8 +96,8 @@ function FloatingTips({ progress }: { progress: React.RefObject<number> }) {
    Local frame: body along x (−1.5 … 1.5), connector at +x.
    ============================================================ */
 const crystal = new THREE.MeshPhysicalMaterial({
-  color: "#ffffff", transmission: 1, thickness: 0.9, ior: 1.52, roughness: 0.02,
-  clearcoat: 1, clearcoatRoughness: 0, specularIntensity: 1, attenuationColor: new THREE.Color("#eef3ff"), attenuationDistance: 3, flatShading: true,
+  color: "#ffffff", transmission: 1, thickness: 0.35, ior: 1.32, roughness: 0.0,
+  clearcoat: 1, clearcoatRoughness: 0, specularIntensity: 1, attenuationColor: new THREE.Color("#ffffff"), attenuationDistance: 50, flatShading: true,
 });
 
 function crystalBodyGeometry(len: number, h: number, d: number, ch: number, endBevel: number) {
@@ -184,6 +131,7 @@ function labelTexture() {
 }
 
 const CLIP = new THREE.Vector3(2.75, 0.95, 0.35);   // clip centre, Shifter-local
+const CLIP_TILT = 0.87;                             // jaws face the same way as the nail
 
 function Shifter({ glowRef }: { glowRef: React.RefObject<number> }) {
   const body = useMemo(() => crystalBodyGeometry(3.0, 0.62, 0.62, 0.11, 0.12), []);
@@ -193,12 +141,12 @@ function Shifter({ glowRef }: { glowRef: React.RefObject<number> }) {
   const cable = useMemo(() => {
     const c = new THREE.CatmullRomCurve3([
       new THREE.Vector3(1.78, 0, 0), new THREE.Vector3(2.35, 0.05, 0.15), new THREE.Vector3(2.7, 0.35, 0.35),
-      new THREE.Vector3(2.75, 0.62, 0.38), new THREE.Vector3(CLIP.x + 0.02, CLIP.y - 0.26, CLIP.z),
+      new THREE.Vector3(2.75, 0.62, 0.38), new THREE.Vector3(CLIP.x - 0.3, CLIP.y - 0.3, CLIP.z - 0.22),
     ]);
     return new THREE.TubeGeometry(c, 80, 0.032, 16, false);
   }, []);
-  const clipBody = useMemo(() => crystalBodyGeometry(0.5, 0.36, 0.36, 0.07, 0.05), []);
-  const clipEnd = useMemo(() => crystalBodyGeometry(0.12, 0.5, 0.5, 0.1, 0.03), []);
+  const jaw = useMemo(() => crystalBodyGeometry(0.62, 0.09, 0.44, 0.03, 0.04), []);
+  const clipEnd = useMemo(() => crystalBodyGeometry(0.14, 0.56, 0.5, 0.1, 0.03), []);
 
   useFrame(() => {
     const g = glowRef.current ?? 0;
@@ -236,15 +184,15 @@ function Shifter({ glowRef }: { glowRef: React.RefObject<number> }) {
       <mesh geometry={cable} castShadow>
         <meshPhysicalMaterial ref={cableMat} color="#f4f6f8" transmission={0.55} thickness={0.1} roughness={0.25} clearcoat={1} toneMapped={false} />
       </mesh>
-      {/* crystal fingertip clip */}
-      <group position={CLIP.toArray()} rotation={[0, 0, 0]}>
-        <mesh geometry={clipBody} material={crystal} castShadow />
-        <mesh geometry={clipEnd} material={crystal} position={[-0.28, 0, 0]} />
-        <mesh geometry={clipEnd} material={crystal} position={[0.28, 0, 0]} />
-        <mesh position={[0, -0.24, 0]} material={chromeMat}><cylinderGeometry args={[0.05, 0.05, 0.08, 20]} /></mesh>
-        <mesh position={[0, 0.0, 0]} rotation={[0, Math.PI / 2, 0]}>
-          <torusGeometry args={[0.15, 0.012, 8, 40]} />
-          <meshStandardMaterial ref={ringMat} color="#ffffff" toneMapped={false} />
+      {/* crystal fingertip clip: back block + two jaws the fingertip slides between */}
+      <group position={CLIP.toArray()} rotation={[CLIP_TILT, 0, 0]}>
+        <mesh geometry={clipEnd} material={crystal} position={[-0.3, 0, 0]} castShadow />
+        <mesh geometry={jaw} material={crystal} position={[0.02, 0.2, 0]} castShadow />
+        <mesh geometry={jaw} material={crystal} position={[0.02, -0.2, 0]} />
+        <mesh position={[-0.3, -0.3, 0]} material={chromeMat}><cylinderGeometry args={[0.05, 0.05, 0.1, 20]} /></mesh>
+        <mesh position={[0.0, 0.158, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.1, 0.13, 40]} />
+          <meshStandardMaterial ref={ringMat} color="#ffffff" toneMapped={false} side={THREE.DoubleSide} />
         </mesh>
       </group>
     </group>
@@ -252,50 +200,41 @@ function Shifter({ glowRef }: { glowRef: React.RefObject<number> }) {
 }
 
 /* ============================================================
-   Rigged hand (WebXR generic hand, MIT). Index finger extended.
-   Output frame: index fingertip at origin, finger pointing −x, nail side +y.
+   Hand: mesh reconstructed from a photo, textured by projecting that photo.
+   hand-nails.png marks the five nails (r = nail, g = 0 cuticle … 1 tip), so the
+   TINTATips on the hand shift at the French tip like the floating ones.
+   Mesh frame: back of the hand +z, middle fingertip at TIP.
    ============================================================ */
-useGLTF.preload("/models/hand-right.glb");
-const handNailMat = makeNailMaterial("#c3b2e6");
+const TIP = new THREE.Vector3(-0.8, -0.92, 0.28);
+const HAND_ROT_Z = -1.007;   // turns the middle finger to point along −x
+const HAND_TILT = -0.7;      // tips the back of the hand up toward the camera
+const HAND_SCALE = 1.8;
 
 function Hand() {
-  const { scene } = useGLTF("/models/hand-right.glb");
-  const h = useMemo(() => {
-    const root = cloneSkinned(scene);
-    const skin = new THREE.MeshPhysicalMaterial({ color: "#e2b199", roughness: 0.5, sheen: 1, sheenRoughness: 0.6, sheenColor: new THREE.Color("#ffd8c4"), clearcoat: 0.1 });
-    root.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (!m.isMesh) return;
-      m.material = skin; m.castShadow = true; m.frustumCulled = false;
-      m.geometry.deleteAttribute("normal");
-      const g = mergeVertices(m.geometry, 1e-4); g.computeVertexNormals(); m.geometry = g;
-    });
-    const b = (n: string) => root.getObjectByName(n)!;
-    const curl = (f: string, a: number) => ["proximal", "intermediate", "distal"].forEach((s, i) => { b(`${f}-finger-phalanx-${s}`).rotation.x -= a * [1, 1.15, 0.8][i]; });
-    curl("middle", 1.35); curl("ring", 1.45); curl("pinky", 1.5); curl("index", 0.06);
-    b("thumb-phalanx-proximal").rotation.x -= 0.5;
-    b("thumb-phalanx-distal").rotation.x -= 0.6;
-    root.updateMatrixWorld(true);
-    const P = (n: string) => b(n).getWorldPosition(new THREE.Vector3());
-    const tip = P("index-finger-tip"), dist = P("index-finger-phalanx-distal");
-    const dir = tip.clone().sub(dist).normalize();
-    const w = P("wrist"), im = P("index-finger-phalanx-proximal"), pm = P("pinky-finger-phalanx-proximal");
-    const palm = new THREE.Vector3().subVectors(im, w).cross(new THREE.Vector3().subVectors(pm, w)).normalize();
-    const up = palm.sub(dir.clone().multiplyScalar(palm.dot(dir))).normalize();
-    const fwd = dir.clone().negate();
-    const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(fwd, up, new THREE.Vector3().crossVectors(fwd, up))).invert();
-    const len = tip.distanceTo(dist);
-    const centre = dist.clone().lerp(tip, 0.82).add(up.clone().multiplyScalar(len * 0.62));
-    const nq = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(dir, up), dir, up));
-    return { root, q, tip, centre, nq, len, scale: 0.3 / (len * 1.5) };
-  }, [scene]);
+  const { scene } = useGLTF("/models/hand.glb", false, true);
+  const [skin, nails] = useTexture(["/models/hand-skin.jpg", "/models/hand-nails.png"]);
+  const { geo, mat } = useMemo(() => {
+    skin.colorSpace = THREE.SRGBColorSpace;
+    const geo = geoOf(scene);
+    const mat = new THREE.MeshPhysicalMaterial({ map: skin, roughness: 0.55, sheen: 0.6, sheenRoughness: 0.6, sheenColor: new THREE.Color("#ffd8c4"), clearcoat: 0.2, clearcoatRoughness: 0.3 });
+    const nailTex = { value: nails }, base = { value: new THREE.Color("#c9b8ea") };
+    mat.onBeforeCompile = (s) => {
+      s.uniforms.uTip = tipUniform; s.uniforms.uNails = nailTex; s.uniforms.uBase = base;
+      s.fragmentShader = s.fragmentShader
+        .replace("#include <common>", "#include <common>\nuniform vec3 uTip;\nuniform vec3 uBase;\nuniform sampler2D uNails;\nfloat nailK = 0.0;")
+        .replace("#include <map_fragment>", `#include <map_fragment>
+          vec4 nm = texture2D(uNails, vMapUv);
+          nailK = smoothstep(0.35, 0.65, nm.r);
+          float tipK = smoothstep(0.52, 0.56, nm.g);
+          diffuseColor.rgb = mix(diffuseColor.rgb, mix(uBase, uTip, tipK), nailK);`)
+        .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.1, nailK);");
+    };
+    return { geo, mat };
+  }, [scene, skin, nails]);
   return (
-    <group rotation={[1.15, 0, 0.1]}>
-      <group scale={h.scale} quaternion={h.q}>
-        <group position={h.tip.clone().negate()}>
-          <primitive object={h.root} />
-          <mesh geometry={nailGeo} material={handNailMat} position={h.centre} quaternion={h.nq} scale={[h.len * 1.25, h.len * 1.4, h.len * 1.2]} castShadow />
-        </group>
+    <group rotation={[HAND_TILT, 0, 0]} scale={HAND_SCALE}>
+      <group rotation={[0, 0, HAND_ROT_Z]}>
+        <mesh geometry={geo} material={mat} position={TIP.clone().negate()} castShadow />
       </group>
     </group>
   );
@@ -309,7 +248,7 @@ function Hand() {
    ============================================================ */
 const CAM = [
   { pos: new THREE.Vector3(0, 0.4, 8.2), look: new THREE.Vector3(0.4, 0.1, 0) },
-  { pos: new THREE.Vector3(2.4, 1.15, 3.6), look: new THREE.Vector3(2.05, 0.55, 0) },
+  { pos: new THREE.Vector3(2.9, 1.5, 6.4), look: new THREE.Vector3(2.5, 0.75, 0) },
   { pos: new THREE.Vector3(-0.6, 1.6, 8.6), look: new THREE.Vector3(0.6, 0.2, 0) },
 ];
 
@@ -348,7 +287,7 @@ function Stage({ hex, progress }: { hex: string; progress: React.RefObject<numbe
 
     // hand: slides in from the right into the clip
     const hIn = smooth(seg(p, 0.28, 0.5)) * (1 - smooth(seg(p, 0.8, 0.98)));
-    hand.current.position.set(CLIP.x + 0.12 + (1 - hIn) * 4, CLIP.y, CLIP.z);
+    hand.current.position.set(CLIP.x - 0.12 + (1 - hIn) * 7, CLIP.y, CLIP.z);
     hand.current.visible = hIn > 0.01;
 
     rig.current.position.y = Math.sin(t * 0.6) * 0.03 - 0.3;
@@ -368,6 +307,7 @@ function Stage({ hex, progress }: { hex: string; progress: React.RefObject<numbe
 export default function Scene({ hex, bg, progress }: { hex: string; bg: string; progress: React.RefObject<number> }) {
   return (
     <Canvas shadows dpr={[1, 1.75]} camera={{ position: [0, 0.4, 8.2], fov: 30 }} gl={{ antialias: true, alpha: true }}>
+      <color attach="background" args={[bg]} />
       <ambientLight intensity={0.8} />
       <directionalLight position={[3, 6, 4]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]} />
       <pointLight position={[-3, 2, 3]} intensity={6} color="#ffffff" />

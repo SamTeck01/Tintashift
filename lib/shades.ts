@@ -32,5 +32,5 @@ export function backdrop(hex: string) {
   if (d) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
   h = Math.round(h * 60 + 360) % 360;
   const s = d ? d / (1 - Math.abs(max + min - 1)) : 0;
-  return `hsl(${h} ${Math.round(Math.min(s, 0.6) * 100)}% 17%)`;
+  return `hsl(${h}, ${Math.round(Math.min(s, 0.6) * 100)}%, 17%)`;
 }
