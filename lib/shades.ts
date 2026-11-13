@@ -1,4 +1,4 @@
-export const DEVICE_NAME = "TINTAShift Device";
+export const DEVICE_NAME = "TINTAShifter";
 
 /** Quick-pick colours for the hero picker. Any colour works — these are just starting points. */
 export const presets = [

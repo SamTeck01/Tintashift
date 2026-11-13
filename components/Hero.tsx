@@ -13,6 +13,17 @@ const device = products[0];
 export default function Hero() {
   const [hex, setHex] = useState(presets[5].hex);
   const [custom, setCustom] = useState("#7c4dff");
+  const wrap = useRef<HTMLDivElement>(null);
+  const progress = useRef(0);
+  useEffect(() => {
+    const on = () => {
+      const el = wrap.current; if (!el) return;
+      const max = el.offsetHeight - window.innerHeight;
+      progress.current = Math.min(1, Math.max(0, -el.getBoundingClientRect().top / Math.max(1, max)));
+    };
+    on(); window.addEventListener("scroll", on, { passive: true }); window.addEventListener("resize", on);
+    return () => { window.removeEventListener("scroll", on); window.removeEventListener("resize", on); };
+  }, []);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { count, add, flash } = useBag();
   const preset = presets.find((p) => p.hex === hex);
@@ -28,9 +39,10 @@ export default function Hero() {
   };
 
   return (
+    <div ref={wrap} className="hero-wrap">
     <section className="hero" style={{ background: bg }}>
       <div className="hero-stack">
-        <div className="scene"><Scene hex={hex} bg={bg} /></div>
+        <div className="scene"><Scene hex={hex} bg={bg} progress={progress} /></div>
         <div className="hero-shade" />
       </div>
 
@@ -81,5 +93,6 @@ export default function Hero() {
         {flash && <motion.div className="toast glass" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>{flash}</motion.div>}
       </AnimatePresence>
     </section>
+    </div>
   );
 }
