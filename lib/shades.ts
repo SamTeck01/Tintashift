@@ -15,12 +15,12 @@ export const presets = [
 
 export type Product = { id: string; name: string; sub: string; price: number; img: string; badge?: string; items: string[] };
 export const products: Product[] = [
-  { id: "device", name: DEVICE_NAME, sub: "Recolours your TINTATips in seconds", price: 99, img: "/img/device.jpg", badge: "The device",
-    items: ["Slide a fingertip in, your TINTATip shifts to any colour", "Pick colours and draw designs in the Tintashift app", "USB-C rechargeable"] },
-  { id: "kit", name: "Starter Kit", sub: `${DEVICE_NAME} + TINTATips`, price: 129, img: "/img/kit.jpg", badge: "Best value",
-    items: [DEVICE_NAME, "24 TINTATips press-ons", "Sticky tabs, file and alcohol pads"] },
-  { id: "tips", name: "TINTATips Refill", sub: "24 colour-shift press-ons", price: 38, img: "/img/step7.jpg",
-    items: ["The only nails the device can shift", "Plain or with designs", "Sticky tabs included"] },
+  { id: "shifter", name: DEVICE_NAME, sub: "The colour-shift device", price: 249, img: "/img/kit.jpg", badge: "The device",
+    items: ["Shifts the French tips of your TINTATips to any colour", "Crystal body with fingertip clip", "Comes in the silver aesthetics bag with tabs, file and pads"] },
+  { id: "si001", name: "Signature SI001", sub: "TINTATip Signature Series", price: 39, img: "/img/si001.jpg",
+    items: ["Almond shape, lilac", "Bows, pearls and Swarovski crystals", "Colour shifts at the French tips"] },
+  { id: "si002", name: "Signature SI002", sub: "TINTATip Signature Series", price: 39, img: "/img/si002.jpg",
+    items: ["Almond shape, chrome rose-grey", "Silver stars and Swarovski crystals", "Colour shifts at the French tips"] },
 ];
 
 /** Background tone derived from the picked colour: same hue, deep and calm so the nail pops. */

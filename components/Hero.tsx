@@ -13,6 +13,7 @@ const device = products[0];
 export default function Hero() {
   const [hex, setHex] = useState(presets[5].hex);
   const [custom, setCustom] = useState("#7c4dff");
+  const [set, setSet] = useState<1 | 2>(1);
   const wrap = useRef<HTMLDivElement>(null);
   const progress = useRef(0);
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function Hero() {
     <div ref={wrap} className="hero-wrap">
     <section className="hero" style={{ background: bg }}>
       <div className="hero-stack">
-        <div className="scene"><Scene hex={hex} bg={bg} progress={progress} /></div>
+        <div className="scene"><Scene hex={hex} bg={bg} progress={progress} set={set} /></div>
         <div className="hero-shade" />
       </div>
 
@@ -68,11 +69,19 @@ export default function Hero() {
             </motion.span>
           </AnimatePresence>
         </h1>
-        <p className="shade-note">Wear TINTATips press-ons, slide a fingertip in, and the tip comes out in any colour you pick. No polish, no salon, no drying time.</p>
+        <p className="shade-note">Colour-changing TINTATips, powered by the TINTAShifter. Pick a colour, pick a nail set, and the French tips shift. No polish, no salon.</p>
         <div className="cta-row">
           <button className="pill dark" onClick={() => add()}>Add to bag <span className="price">${device.price}</span></button>
           <a className="pill outline" href="#how">How it works <span aria-hidden>↓</span></a>
         </div>
+      </div>
+
+      <div className="sets">
+        {([1, 2] as const).map((n) => (
+          <button key={n} className={`set glass ${set === n ? "on" : ""}`} onClick={() => setSet(n)} aria-pressed={set === n}>
+            <b>SI00{n}</b>{n === 1 ? "Bow" : "Star"}
+          </button>
+        ))}
       </div>
 
       <motion.div className="picker glass" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8, ease, delay: .3 }}>

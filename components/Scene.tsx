@@ -10,6 +10,8 @@ import * as THREE from "three";
    set shifts together.
    ============================================================ */
 const tipUniform = { value: new THREE.Color("#2f56c9") };
+const handBase = { value: new THREE.Color("#b9a6e2") };          // nail-set base colour on the hand
+const SET_BASE = { 1: new THREE.Color("#b9a6e2"), 2: new THREE.Color("#a8959f") } as const;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const seg = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
@@ -52,19 +54,33 @@ const FLOAT = Array.from({ length: 10 }, (_, i) => {
     series: i % 2 ? 2 : 1,
     p: [Math.cos(a) * 3.0, Math.sin(a) * 1.35 + 0.25, Math.sin(a * 2) * 0.5 - 0.6] as const,
     r: [Math.sin(i) * 0.25, Math.cos(i * 1.7) * 0.45, a + Math.PI / 2 + Math.sin(i) * 0.4] as const,
-    s: 0.9 + (i % 4) * 0.08,
+    s: 1.05 + (i % 4) * 0.1,
   };
 });
 
+/* Pull the first mesh out of a (meshopt-quantised) glTF as plain float geometry in world units. */
 function geoOf(scene: THREE.Object3D) {
-  let g: THREE.BufferGeometry | null = null;
-  scene.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh && !g) g = m.geometry; });
-  const out = (g as unknown as THREE.BufferGeometry).clone();
+  let src: THREE.Mesh | null = null;
+  scene.updateMatrixWorld(true);
+  scene.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh && !src) src = m; });
+  const mesh = src as unknown as THREE.Mesh, g = mesh.geometry, n = g.attributes.position.count;
+  const out = new THREE.BufferGeometry(), v = new THREE.Vector3();
+  const pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { v.fromBufferAttribute(g.attributes.position, i).applyMatrix4(mesh.matrixWorld); pos.set([v.x, v.y, v.z], i * 3); }
+  out.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  for (const [name, size] of [["uv", 2], ["color", 3]] as const) {
+    const a = g.attributes[name]; if (!a) continue;
+    const arr = new Float32Array(n * size);
+    for (let i = 0; i < n; i++) { arr[i * size] = a.getX(i); arr[i * size + 1] = a.getY(i); if (size === 3) arr[i * size + 2] = a.getZ(i); }
+    out.setAttribute(name, new THREE.BufferAttribute(arr, size));
+  }
+  if (!out.attributes.color) out.setAttribute("color", new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  if (g.index) out.setIndex(Array.from(g.index.array));
   out.computeVertexNormals();
   return out;
 }
 
-function FloatingTips({ progress }: { progress: React.RefObject<number> }) {
+function FloatingTips({ progress, set }: { progress: React.RefObject<number>; set: 1 | 2 }) {
   const g1 = useGLTF("/models/si001.glb", false, true), g2 = useGLTF("/models/si002.glb", false, true);
   const geo1 = useMemo(() => geoOf(g1.scene), [g1]), geo2 = useMemo(() => geoOf(g2.scene), [g2]);
   const items = useRef<THREE.Mesh[]>([]);
@@ -78,7 +94,7 @@ function FloatingTips({ progress }: { progress: React.RefObject<number> }) {
       m.position.set(f.p[0] * spread, f.p[1] * spread + Math.sin(t * 0.9 + i) * 0.07, f.p[2] + k * 2);
       m.rotation.set(f.r[0] + Math.sin(t * 0.5 + i) * 0.15, f.r[1] + Math.sin(t * 0.35 + i * 2) * 0.5, f.r[2]);
       m.scale.setScalar(f.s * (1 - k * 0.7));
-      m.visible = k < 0.97;
+      m.visible = k < 0.97 && f.series === set;
     });
   });
   return (
@@ -96,7 +112,7 @@ function FloatingTips({ progress }: { progress: React.RefObject<number> }) {
    Local frame: body along x (−1.5 … 1.5), connector at +x.
    ============================================================ */
 const crystal = new THREE.MeshPhysicalMaterial({
-  color: "#ffffff", transmission: 1, thickness: 0.35, ior: 1.32, roughness: 0.0,
+  color: "#ffffff", transmission: 0.92, thickness: 0.5, ior: 1.4, roughness: 0.03, envMapIntensity: 2.2,
   clearcoat: 1, clearcoatRoughness: 0, specularIntensity: 1, attenuationColor: new THREE.Color("#ffffff"), attenuationDistance: 50, flatShading: true,
 });
 
@@ -136,6 +152,7 @@ const CLIP_TILT = 0.87;                             // jaws face the same way as
 function Shifter({ glowRef }: { glowRef: React.RefObject<number> }) {
   const body = useMemo(() => crystalBodyGeometry(3.0, 0.62, 0.62, 0.11, 0.12), []);
   const label = useMemo(() => labelTexture(), []);
+  const bodyEdges = useMemo(() => new THREE.EdgesGeometry(body, 20), [body]);
   const cableMat = useRef<THREE.MeshPhysicalMaterial>(null!);
   const ringMat = useRef<THREE.MeshStandardMaterial>(null!);
   const cable = useMemo(() => {
@@ -160,6 +177,7 @@ function Shifter({ glowRef }: { glowRef: React.RefObject<number> }) {
     <group>
       {/* crystal body */}
       <mesh geometry={body} material={crystal} castShadow />
+      <lineSegments geometry={bodyEdges}><lineBasicMaterial color="#ffffff" transparent opacity={0.45} /></lineSegments>
       {/* label panel inside */}
       <mesh position={[0.05, 0.02, 0.08]}>
         <planeGeometry args={[1.85, 0.4]} />
@@ -207,8 +225,8 @@ function Shifter({ glowRef }: { glowRef: React.RefObject<number> }) {
    ============================================================ */
 const TIP = new THREE.Vector3(-0.8, -0.92, 0.28);
 const HAND_ROT_Z = -1.007;   // turns the middle finger to point along −x
-const HAND_TILT = -0.7;      // tips the back of the hand up toward the camera
-const HAND_SCALE = 1.8;
+const HAND_TILT = -0.2;      // tips the back of the hand up toward the camera
+const HAND_SCALE = 1.15;
 
 function Hand() {
   const { scene } = useGLTF("/models/hand.glb", false, true);
@@ -217,7 +235,7 @@ function Hand() {
     skin.colorSpace = THREE.SRGBColorSpace;
     const geo = geoOf(scene);
     const mat = new THREE.MeshPhysicalMaterial({ map: skin, roughness: 0.55, sheen: 0.6, sheenRoughness: 0.6, sheenColor: new THREE.Color("#ffd8c4"), clearcoat: 0.2, clearcoatRoughness: 0.3 });
-    const nailTex = { value: nails }, base = { value: new THREE.Color("#c9b8ea") };
+    const nailTex = { value: nails }, base = handBase;
     mat.onBeforeCompile = (s) => {
       s.uniforms.uTip = tipUniform; s.uniforms.uNails = nailTex; s.uniforms.uBase = base;
       s.fragmentShader = s.fragmentShader
@@ -247,12 +265,12 @@ function Hand() {
    p 0.70–1.00  pull back to the full product
    ============================================================ */
 const CAM = [
-  { pos: new THREE.Vector3(0, 0.4, 8.2), look: new THREE.Vector3(0.4, 0.1, 0) },
-  { pos: new THREE.Vector3(2.9, 1.5, 6.4), look: new THREE.Vector3(2.5, 0.75, 0) },
-  { pos: new THREE.Vector3(-0.6, 1.6, 8.6), look: new THREE.Vector3(0.6, 0.2, 0) },
+  { pos: new THREE.Vector3(0.9, 0.5, 9.2), look: new THREE.Vector3(1.3, 0.25, 0) },
+  { pos: new THREE.Vector3(1.5, 1.8, 8.2), look: new THREE.Vector3(1.5, 0.55, 0) },
+  { pos: new THREE.Vector3(0.2, 1.7, 9.4), look: new THREE.Vector3(1.4, 0.3, 0) },
 ];
 
-function Stage({ hex, progress }: { hex: string; progress: React.RefObject<number> }) {
+function Stage({ hex, progress, set }: { hex: string; progress: React.RefObject<number>; set: 1 | 2 }) {
   const { camera, size } = useThree();
   const mobile = size.width / size.height < 0.9;
   const rig = useRef<THREE.Group>(null!);
@@ -280,15 +298,14 @@ function Stage({ hex, progress }: { hex: string; progress: React.RefObject<numbe
     const a = smooth(seg(p, 0.12, 0.42)), b = smooth(seg(p, 0.7, 0.95));
     camPos.copy(CAM[0].pos).lerp(CAM[1].pos, a).lerp(CAM[2].pos, b);
     look.copy(CAM[0].look).lerp(CAM[1].look, a).lerp(CAM[2].look, b);
-    if (mobile) { camPos.z += 3.5 * (1 - a * 0.7); camPos.y += 0.6; }
+    if (mobile) { camPos.z += 7 - a * 2; camPos.x -= 1.0; look.x -= 1.0; look.y -= 1.4 - a * 0.5; }
     camPos.x += pointer.x * 0.25; camPos.y += pointer.y * 0.12;
     camera.position.lerp(camPos, 1 - Math.exp(-dt * 5));
     camera.lookAt(look);
 
-    // hand: slides in from the right into the clip
-    const hIn = smooth(seg(p, 0.28, 0.5)) * (1 - smooth(seg(p, 0.8, 0.98)));
-    hand.current.position.set(CLIP.x - 0.12 + (1 - hIn) * 7, CLIP.y, CLIP.z);
-    hand.current.visible = hIn > 0.01;
+    // one hand, resting beside the Shifter (no dip-in animation, per client)
+    hand.current.position.set(3.3, 0.05 + Math.sin(t * 0.7) * 0.02, 0.7);
+    handBase.value.lerp(SET_BASE[set], 1 - Math.exp(-dt * 5));
 
     rig.current.position.y = Math.sin(t * 0.6) * 0.03 - 0.3;
   });
@@ -299,19 +316,19 @@ function Stage({ hex, progress }: { hex: string; progress: React.RefObject<numbe
         <Shifter glowRef={glow} />
         <group ref={hand}><Hand /></group>
       </group>
-      <FloatingTips progress={progress} />
+      <FloatingTips progress={progress} set={set} />
     </group>
   );
 }
 
-export default function Scene({ hex, bg, progress }: { hex: string; bg: string; progress: React.RefObject<number> }) {
+export default function Scene({ hex, bg, progress, set }: { hex: string; bg: string; progress: React.RefObject<number>; set: 1 | 2 }) {
   return (
     <Canvas shadows dpr={[1, 1.75]} camera={{ position: [0, 0.4, 8.2], fov: 30 }} gl={{ antialias: true, alpha: true }}>
       <color attach="background" args={[bg]} />
       <ambientLight intensity={0.8} />
       <directionalLight position={[3, 6, 4]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]} />
       <pointLight position={[-3, 2, 3]} intensity={6} color="#ffffff" />
-      <Suspense fallback={null}><Stage hex={hex} progress={progress} /></Suspense>
+      <Suspense fallback={null}><Stage hex={hex} progress={progress} set={set} /></Suspense>
       <ContactShadows position={[0, -0.95, 0]} opacity={0.45} scale={14} blur={2.6} far={3} color="#000" />
       <Environment resolution={256}>
         <Lightformer form="rect" intensity={4} position={[0, 5, 1]} scale={[10, 2, 1]} />
