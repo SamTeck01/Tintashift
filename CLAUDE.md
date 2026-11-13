@@ -33,8 +33,17 @@ VERNIS by Ascenta Studio, https://ascentastudio.com/vernis/. SamTeck supplied it
 - `public/hero/<name>.webp` + `<name>-m.webp`: photo and maps (R keep, G tip mask or device sparkle, B shadow) for `device`, `si001`, `si002`, `spotlight`, `chapter`, `spectrum`. `lib/hero-layers.json`: image size and each hand's vertical nudge.
 - `tools/build_hero.py`: builds those layers from `docs/source-images/wide-*.png` (background removal with rembg, backdrop flattening, tip key). Re-run it after adding or replacing a source image.
 - `lib/shades.ts`: colour presets, hero nail sets, the store's seven products and prices, `surface()` (tabletop colour for a picked shade).
+- `lib/shopify.ts`: the Shopify connection (see below). `components/Bag.tsx`: bag state (kept in localStorage) and the bag drawer.
+- `components/Logo.tsx`: the brand's chameleon (`public/img/chameleon.png`, cut from their Instagram artwork, low resolution) plus the wordmark set in type.
 - `components/Sections.tsx`: shop, technology, how-to, outfits, newsletter, footer.
 - Headless screenshots: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
+
+## Shopify connection (no credentials involved)
+Dave asked on 13 Nov 2026 to connect the site to his Shopify store, tintashift.store. It is connected without a token or admin access:
+- **Catalogue:** `getProducts()` reads the store's public feed `https://tintashift.store/products.json` on the server and refreshes every five minutes (`revalidate = 300` on the page), so names, prices, stock and new products follow Shopify. Our own picture, badge and bullets are kept per product handle; the Shifter and Complete Shift keep our crystal pictures because the store's photo still shows the old aluminium device. If the feed fails, the static list in `lib/shades.ts` is used.
+- **Checkout:** the bag's Checkout button is a Shopify cart link, `https://tintashift.store/cart/<variantId>:<qty>,…`, which opens his real Shopify checkout with those items. Tested: it redirects to the Shopify checkout.
+- To use another store set `NEXT_PUBLIC_SHOPIFY_DOMAIN`. The site itself stays a Next.js app on Vercel; it is not a Shopify theme, so there is no theme file to upload. Pointing his domain at Vercel is done in Vercel's domain settings.
+- Not done: discount codes, customer accounts and a cart shared with the Shopify theme. Those need the Storefront API and a Storefront access token from Dave's Shopify admin (Headless channel).
 
 ## How the hero pictures were made
 Figma's image generator (`generate_image`, model `gemini-3.1-flash-image`), in SamTeck's Figma file "Tintashift hero imagery" (key `AfElvizgb8gt0U1WgJvPYT`). It is text-to-image only and spends his Figma AI credits; he approved that on 13 Nov 2026. Output is 1376×768.
@@ -48,7 +57,8 @@ Figma's image generator (`generate_image`, model `gemini-3.1-flash-image`), in S
 - The nail designs are generated from descriptions of the real sets, not the real products. Muse and Icon are in the shop list but have no hero set because their designs are not clear in the client's photos. "Spectrum" (whole nail changes) comes from their Instagram, not the store.
 - The Shifter in the picture is generated from a description of the crystal device. It matches the kit photo closely but is not a photo of the real unit.
 - Each set is a different generated hand, so skin and pose change slightly when switching sets. The Spotlight image has a bracelet and a ring.
-- Bag is a counter only; no Shopify checkout yet (Dave offered Shopify credentials). Newsletter form does not store emails. Logo is a placeholder swirl.
+- Newsletter form does not store emails. The chameleon logo is cut from a small Instagram image; ask Dave for the vector logo.
+- No real order has been placed through the site; the checkout link was only followed as far as the Shopify checkout page.
 - Checked in headless Chromium at 1440×810 and 390×780 only, not on real devices.
 
 ## Rules

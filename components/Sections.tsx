@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { products, DEVICE_NAME, CURRENCY } from "@/lib/shades";
+import { DEVICE_NAME, CURRENCY, type Product } from "@/lib/shades";
 import { useBag } from "./Bag";
 import Logo from "./Logo";
 
@@ -13,7 +13,7 @@ const reveal = {
   transition: { duration: .8, ease: [0.22, 1, 0.36, 1] as const },
 };
 
-export function Shop() {
+export function Shop({ products }: { products: Product[] }) {
   const { add } = useBag();
   return (
     <section id="shop" className="sec light">
@@ -34,7 +34,7 @@ export function Shop() {
                 <span className="card-price">{CURRENCY}{p.price}</span>
               </div>
               <ul>{p.items.map((x) => <li key={x}>{x}</li>)}</ul>
-              <button className="pill dark sm" onClick={() => add()}>Add to bag
+              <button className="pill dark sm" disabled={!p.available} onClick={() => add(p)}>{p.available ? "Add to bag" : "Sold out"}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 7h12l-1 13H7L6 7z" /><path d="M9 7a3 3 0 0 1 6 0" /></svg>
               </button>
             </div>

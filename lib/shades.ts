@@ -16,30 +16,32 @@ export const presets = [
 
 /** Nail sets shown on the hand in the hero. `id` matches a layer in public/hero; `base` colours the little swatch. */
 export const sets = [
-  { id: "si001", name: "Signature", tag: "SI001 · Bow", base: "#cdbdec" },
-  { id: "si002", name: "Signature", tag: "SI002 · Star", base: "#b7a5ad" },
-  { id: "spotlight", name: "Spotlight", tag: "Sea glass", base: "#a9cbe8" },
-  { id: "chapter", name: "Chapter", tag: "Pearl", base: "#f3dcdd" },
-  { id: "spectrum", name: "Spectrum", tag: "Full colour", base: null },
+  { id: "si001", name: "Signature", tag: "SI001 · Bow", base: "#cdbdec", product: "tinta-signature" },
+  { id: "si002", name: "Signature", tag: "SI002 · Star", base: "#b7a5ad", product: "tinta-signature" },
+  { id: "spotlight", name: "Spotlight", tag: "Sea glass", base: "#a9cbe8", product: "tinta-spotlight" },
+  { id: "chapter", name: "Chapter", tag: "Pearl", base: "#f3dcdd", product: "tinta-chapter" },
+  { id: "spectrum", name: "Spectrum", tag: "Full colour", base: null, product: null },
 ] as const;
 export type SetId = (typeof sets)[number]["id"];
 
-/** The catalogue as sold on tintashift.store (names and prices from its products.json, Nov 2026). */
-export type Product = { id: string; name: string; sub: string; price: number; img: string; badge?: string; items: string[] };
+/** A product as the site shows it. `id` is the Shopify product handle and `variantId` the variant that goes
+ *  into the cart. The live list comes from Shopify (lib/shopify.ts); this copy is the fallback if that fetch
+ *  fails, taken from tintashift.store/products.json in Nov 2026. */
+export type Product = { id: string; variantId: string; name: string; sub: string; price: number; img: string; available: boolean; badge?: string; items: string[] };
 export const products: Product[] = [
-  { id: "shifter", name: DEVICE_NAME, sub: "The colour-changing device", price: 249, img: "/img/shifter-crystal.jpg", badge: "The device",
+  { id: "tintashifter", variantId: "57823795446086", name: DEVICE_NAME, sub: "The colour-changing device", price: 249, img: "/img/shifter-crystal.jpg", available: true, badge: "The device",
     items: ["Shifts your Smart Tips to any colour in seconds", "Crystal body with fingertip clip", "Pick the shade in the TINTAShift app"] },
-  { id: "complete", name: "The Complete Shift", sub: "TINTAShifter and Smart Tips in one set", price: 288, img: "/img/complete-shift.jpg", badge: "Complete set",
+  { id: "the-complete-shift", variantId: "57823795478854", name: "The Complete Shift", sub: "TINTAShifter and Smart Tips in one set", price: 288, img: "/img/complete-shift.jpg", available: true, badge: "Complete set",
     items: ["TINTAShifter and one set of Smart Tips", "Adhesive tabs, alcohol pads, file, crystal cuticle pusher", "Silver aesthetics bag"] },
-  { id: "signature", name: "TINTA Signature", sub: "Your personal sense of colour and form", price: 39, img: "/img/series-signature.jpg",
+  { id: "tinta-signature", variantId: "57823795413318", name: "TINTA Signature", sub: "Your personal sense of colour and form", price: 39, img: "/img/series-signature.jpg", available: true,
     items: ["Almond shape, Swarovski crystals", "Colour shifts at the French tips"] },
-  { id: "spotlight", name: "TINTA Spotlight", sub: "For the moments you give your own colour", price: 39, img: "/img/series-spotlight.jpg",
+  { id: "tinta-spotlight", variantId: "57823795183942", name: "TINTA Spotlight", sub: "For the moments you give your own colour", price: 39, img: "/img/series-spotlight.jpg", available: true,
     items: ["Almond shape, Swarovski crystals", "Colour shifts with the Shifter"] },
-  { id: "chapter", name: "TINTA Chapter", sub: "A new chapter, a new expression", price: 39, img: "/img/series-chapter.jpg",
+  { id: "tinta-chapter", variantId: "57823795216710", name: "TINTA Chapter", sub: "A new chapter, a new expression", price: 39, img: "/img/series-chapter.jpg", available: true,
     items: ["Almond shape, pearls and crystals", "Colour shifts with the Shifter"] },
-  { id: "icon", name: "TINTA Icon", sub: "A clear expression of your own style", price: 39, img: "/img/series-icon.jpg",
+  { id: "tinta-icon", variantId: "57823795118406", name: "TINTA Icon", sub: "A clear expression of your own style", price: 39, img: "/img/series-icon.jpg", available: true,
     items: ["Smart Tips press-ons", "Colour shifts with the Shifter"] },
-  { id: "muse", name: "TINTA Muse", sub: "An initial spark for your look", price: 39, img: "/img/series-muse.jpg",
+  { id: "tinta-muse", variantId: "57823795085638", name: "TINTA Muse", sub: "An initial spark for your look", price: 39, img: "/img/series-muse.jpg", available: true,
     items: ["Smart Tips press-ons", "Colour shifts with the Shifter"] },
 ];
 

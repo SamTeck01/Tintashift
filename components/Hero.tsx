@@ -1,20 +1,21 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { presets, products, sets, surface, isLight, DEVICE_NAME, CURRENCY, type SetId } from "@/lib/shades";
+import { presets, sets, surface, isLight, DEVICE_NAME, CURRENCY, type SetId, type Product } from "@/lib/shades";
 import { useBag } from "./Bag";
 import HeroScene from "./HeroScene";
 import Logo from "./Logo";
 
 const ease = [0.22, 1, 0.36, 1] as const;
-const device = products[0];
 
-export default function Hero() {
+export default function Hero({ products }: { products: Product[] }) {
+  const device = products.find((p) => p.id === "tintashifter") ?? products[0];
   const [hex, setHex] = useState(presets[5].hex);
   const [custom, setCustom] = useState("#7c4dff");
   const [set, setSet] = useState<SetId>("si001");
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { count, add, flash } = useBag();
+  const { count, add, flash, open } = useBag();
+  const setProduct = products.find((p) => p.id === sets.find((s) => s.id === set)?.product);
   const preset = presets.find((p) => p.hex === hex);
   const label = preset ? preset.name : "Your colour";
   const bg = surface(hex);
@@ -37,7 +38,7 @@ export default function Hero() {
         <nav className="nav-links">
           <a href="#shop">Shop</a><a href="#how">How it works</a><a href="#about">About</a>
         </nav>
-        <button className="pill glass bag-btn" aria-label="Bag">
+        <button className="pill glass bag-btn" aria-label={`Bag, ${count} items`} onClick={open}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 7h12l-1 13H7L6 7z" /><path d="M9 7a3 3 0 0 1 6 0" /></svg>
           Bag <span className="bag-count">{count}</span>
         </button>
@@ -56,7 +57,7 @@ export default function Hero() {
         </h1>
         <p className="shade-note">Press-on nails that change colour. Pick a shade, slide a tip into the {DEVICE_NAME}, and it shifts in seconds.</p>
         <div className="cta-row">
-          <button className="pill dark" onClick={() => add()}>Add to bag <span className="price">{CURRENCY}{device.price}</span></button>
+          <button className="pill dark" onClick={() => add(device)}>Add to bag <span className="price">{CURRENCY}{device.price}</span></button>
           <a className="pill outline" href="#how">How it works <span aria-hidden>↓</span></a>
         </div>
       </div>
@@ -75,7 +76,11 @@ export default function Hero() {
             <input type="color" value={custom} onChange={(e) => pickCustom(e.target.value)} aria-label="Pick any colour" />
           </label>
         </div>
-        <div className="panel-row"><span className="panel-label">Nail set</span><span className="panel-hex">{CURRENCY}39 a set</span></div>
+        <div className="panel-row"><span className="panel-label">Nail set</span>
+          {setProduct
+            ? <button className="panel-add" onClick={() => add(setProduct)}>Add this set · {CURRENCY}{setProduct.price}</button>
+            : <span className="panel-hex">Concept set</span>}
+        </div>
         <div className="panel-sets" role="radiogroup" aria-label="Nail set">
           {sets.map((s) => (
             <button key={s.id} role="radio" aria-checked={set === s.id} className={`set ${set === s.id ? "on" : ""}`} onClick={() => setSet(s.id)}>
