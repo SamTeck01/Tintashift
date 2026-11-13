@@ -25,35 +25,32 @@ VERNIS by Ascenta Studio, https://ascentastudio.com/vernis/. SamTeck supplied it
 - Keep the **colour panel**; under/near it a control to **switch the nail set** (SI001/SI002). The hand's nails change with it.
 - He said the earlier version was "not close to the scroll animation" of the reference, so scroll-driven camera movement stays, kept subtle.
 - His words (WhatsApp): "keep the style with 1 hand, like in the example", "without putting the finger inside the machine", "no too much animation", "keep the color panel, and then under it you can slide what nails you want to switch it with, like the products", "on the left side is the machine, and then the hand where you can switch the color and also the model / nail set".
-- SamTeck's verdict on the current live hero (13 Nov): not good enough. The real-time 3D looks fake next to the reference and loads slowly. Direction under discussion: photoreal pre-rendered imagery like the reference, with the tip colour changed live by a mask.
+- SamTeck's verdict on the earlier real-time 3D hero (13 Nov): not good enough, looked fake next to the reference and loaded slowly. It was replaced the same day by the photo hero below. He also wants more than the tip to change: the whole surface takes the colour, and the Spectrum set changes the whole nail.
 
 ## Code map
-- `components/Hero.tsx`: sticky hero inside `.hero-wrap` (320svh), tracks scroll progress 0..1, colour picker, nail-set buttons.
-- `components/Scene.tsx`: React Three Fiber scene.
-  - `tipUniform`: shared French-tip colour for all nails.
-  - `Shifter`: coded crystal body, label canvas texture, cable, clip.
-  - `FloatingTips`: `public/models/si001.glb` / `si002.glb`; vertex colour r marks raised decorations.
-  - `Hand`: `public/models/hand.glb`, a real modelled hand (MakeHuman, CC0) with its skin texture embedded. Nodes `nail-1`…`nail-5` (thumb…little finger) mark each cuticle; the hand wears the same `si001`/`si002` tip meshes as the floating ones, so bows/stars and the tip colour show on all five nails.
-  - `Stage`: phones (portrait) get their own layout: Shifter on top, hand below, floating tips hidden, scene shifted into the top of the screen with `setViewOffset`.
-  - Camera path `CAM[0..2]` driven by scroll.
-  - `geoOf()` converts meshopt-quantised glTF to float geometry. Do not call computeVertexNormals on the raw quantised geometry.
-- `components/Sections.tsx`: shop, technology, how-to, outfits, newsletter, footer. `lib/shades.ts`: device name, colour presets, products, prices.
-- `tools/build_hand.py`: rebuilds `hand.glb` from the MakeHuman `base.obj` and a skin PNG (URLs in the file header). Swap the skin PNG there to change skin tone.
-- Headless screenshots need `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader` and long timeouts.
+- `components/Hero.tsx`: full-screen hero. Copy top right, glass panel bottom right with the colour dots and the nail-set slider. No scroll animation.
+- `components/HeroScene.tsx`: one WebGL quad, no 3D. It blends a device layer and one hand layer per nail set over a surface in the picked colour: shadows multiply onto the surface, the crystal shows the surface through it, the green key colour on the nails is repainted in the picked colour. Switching set slides the hand out to the top-left and the next one in.
+- `public/hero/<name>.webp` + `<name>-m.webp`: photo and maps (R keep, G tip mask or device sparkle, B shadow) for `device`, `si001`, `si002`, `spotlight`, `chapter`, `spectrum`. `lib/hero-layers.json`: image size and each hand's vertical nudge.
+- `tools/build_hero.py`: builds those layers from `docs/source-images/wide-*.png` (background removal with rembg, backdrop flattening, tip key). Re-run it after adding or replacing a source image.
+- `lib/shades.ts`: colour presets, hero nail sets, the store's seven products and prices, `surface()` (tabletop colour for a picked shade).
+- `components/Sections.tsx`: shop, technology, how-to, outfits, newsletter, footer.
+- Headless screenshots: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
 
-## How the 3D models were made (free)
-The **tips** (`si001.glb`, `si002.glb`): Hunyuan3D-2 Hugging Face Space, endpoint `/shape_generation` (shape only, works on the anonymous GPU quota), from crops of the client's Instagram photos. Then `gltf-transform weld/simplify`, a Python bake (decoration vertex colours), then `gltf-transform meshopt`. Textured generation and TRELLIS need a browser-logged-in HF account or paid credits.
-The **hand** is not AI-generated: it is the MakeHuman base mesh (CC0), see `tools/build_hand.py`. The earlier AI-reconstructed hand looked smeared and was dropped.
+## How the hero pictures were made
+Figma's image generator (`generate_image`, model `gemini-3.1-flash-image`), in SamTeck's Figma file "Tintashift hero imagery" (key `AfElvizgb8gt0U1WgJvPYT`). It is text-to-image only and spends his Figma AI credits; he approved that on 13 Nov 2026. Output is 1376×768.
+- Every image uses the same prompt skeleton so angle and light match: three-quarter view about 35° above a plain white surface, hand entering from the upper-left, soft key light from the upper left, French tips painted "solid, flat, vivid pure green (#00FF00)" as a key colour. Only the nail description changes per set. `wide-si001.png` also contains the Shifter, described from the kit photo.
+- `docs/source-images/top-*.png` are top-down versions of four sets, generated first and not used yet. They suit a close-up "Try it on" view like the reference's.
+- Weave (Figma's image-editing and video models) is not linked to his account, so there is no image-to-image editing and no generated camera-move video yet.
 
 ## Known gaps / next steps
-- The hand is in MakeHuman's rest pose (fingers spread) and is not rigged; a more relaxed pose would need bone weights added in the build script.
-- The tips on the hand are the AI-reconstructed meshes scaled down, so they look a little lumpy up close.
-- Mobile hero was checked in headless Chromium at 390×780 only.
-- The Shifter is coded geometry, close but not exact (the AI mesh of it was too mushy). Real CAD from the client would be best.
-- Bag is a counter only; no Shopify checkout yet (Dave offered Shopify credentials). Newsletter form does not store emails.
-- Logo is a placeholder swirl. The white aluminium device in the older videos is an earlier design; use the crystal Shifter.
-- Not verified on a real phone GPU; the scene is heavy (transmission material).
+- No close-up view yet. The reference zooms from the wide shot to a top-down close-up with a short generated video; we have the top-down stills but no video.
+- Source images are 1376 px wide, so the hero is slightly soft on large high-density screens. The reference serves 2560 px and 4K.
+- The nail designs are generated from descriptions of the real sets, not the real products. Muse and Icon are in the shop list but have no hero set because their designs are not clear in the client's photos. "Spectrum" (whole nail changes) comes from their Instagram, not the store.
+- The Shifter in the picture is generated from a description of the crystal device. It matches the kit photo closely but is not a photo of the real unit.
+- Each set is a different generated hand, so skin and pose change slightly when switching sets. The Spotlight image has a bracelet and a ring.
+- Bag is a counter only; no Shopify checkout yet (Dave offered Shopify credentials). Newsletter form does not store emails. Logo is a placeholder swirl.
+- Checked in headless Chromium at 1440×810 and 390×780 only, not on real devices.
 
 ## Rules
 - Develop on `ccr-a563bc74-rhkfx4`, commit and push when done. Keep Next.js patched (Vercel blocks vulnerable versions).
-- Do not copy the reference site's photos or assets. Hand model credit is in README.
+- Do not copy the reference site's photos or assets.

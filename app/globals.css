@@ -26,8 +26,7 @@ img{display:block}
 .price{background:rgba(255,255,255,.14);border-radius:999px;height:28px;display:inline-flex;align-items:center;padding:0 12px;font-size:12px}
 
 /* ---------- hero ---------- */
-.hero-wrap{position:relative;height:320svh}
-.hero{position:sticky;top:0;height:100svh;min-height:620px;overflow:hidden;color:#fff;transition:background .9s var(--ease)}
+.hero{position:relative;height:100svh;min-height:640px;overflow:hidden;color:#fff;transition:background .5s var(--ease),color .4s}
 .hero.ink-dark{color:#1a1216}
 .hero.ink-dark .pill.outline{border-color:rgba(26,18,22,.4);color:#1a1216}
 .hero.ink-dark .nav-links a,.hero.ink-dark .eyebrow{color:#1a1216}
@@ -204,3 +203,45 @@ img{display:block}
   .tech-stats{gap:22px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- photo hero (canvas scene, copy top right, colour and nail-set panel) ---------- */
+.scene-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero .hero-shade{background:linear-gradient(180deg,rgba(0,0,0,.14),transparent 20%)}
+.hero.ink-dark .hero-shade{background:none}
+.hero.ink-dark .pill.glass,.hero.ink-dark .panel{color:#1a1216;background:rgba(255,255,255,.34);border-color:rgba(26,18,22,.14)}
+.hero.ink-dark .bag-count{background:rgba(26,18,22,.12)}
+.hero.ink-dark .hero-colour i{box-shadow:inset 0 -3px 8px rgba(0,0,0,.3),0 0 0 2px rgba(26,18,22,.5)}
+.hero-copy{top:15vh;max-width:min(430px,34vw)}
+.shade-name{font-size:clamp(44px,5.2vw,86px)}
+.panel{position:absolute;z-index:4;right:28px;bottom:28px;width:min(400px,34vw);padding:16px 16px 14px;border-radius:26px;color:#fff;background:rgba(255,255,255,.12);display:grid;gap:10px}
+.panel-row{display:flex;justify-content:space-between;align-items:center}
+.panel-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.85}
+.panel-hex{font-size:10px;font-variant-numeric:tabular-nums;opacity:.7;letter-spacing:.06em}
+.panel-dots{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.panel .dot{width:28px;height:28px}
+.panel-sets{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px}
+.panel-sets::-webkit-scrollbar{display:none}
+.panel .set{flex:0 0 auto;scroll-snap-align:start;height:auto;padding:8px 14px 8px 9px;border-radius:16px;gap:10px;display:flex;align-items:center;color:inherit;font-size:11px;opacity:.78;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);transition:opacity .3s,background .3s,border-color .3s,transform .3s var(--ease)}
+.panel .set:hover{opacity:1;transform:translateY(-1px)}
+.panel .set.on{opacity:1;background:rgba(255,255,255,.3);border-color:rgba(255,255,255,.75)}
+.hero.ink-dark .panel .set{background:rgba(255,255,255,.3);border-color:rgba(26,18,22,.12)}
+.hero.ink-dark .panel .set.on{background:rgba(255,255,255,.75);border-color:rgba(26,18,22,.55)}
+.set-nail{width:17px;height:30px;border-radius:50% 50% 42% 42%/72% 72% 28% 28%;background:linear-gradient(180deg,var(--shade) 0 36%,var(--b) 36%);box-shadow:inset 0 -3px 5px rgba(0,0,0,.18),inset 2px 2px 3px rgba(255,255,255,.55),0 3px 8px -2px rgba(0,0,0,.4);transition:background .4s}
+.set-txt{display:grid;text-align:left;line-height:1.3;white-space:nowrap}
+.set-txt b{font-weight:600;font-size:12px}
+.shop{grid-template-columns:repeat(4,1fr)}
+.prod.feat{grid-column:span 2}
+@media (max-width:1100px){.shop{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:760px){
+  .hero{height:auto;min-height:max(100svh,calc(58px + 88vw + 440px))}
+  .hero-copy{top:calc(58px + 88vw)!important;bottom:auto!important;left:16px;right:16px;max-width:none;align-items:flex-start;text-align:left}
+  .shade-name{font-size:40px;margin:8px 0 12px}
+  .shade-note{display:none}
+  .cta-row{margin-top:4px}
+  .panel{left:12px;right:12px;bottom:12px;width:auto;padding:14px 14px 12px}
+  .panel .dot{width:25px;height:25px}
+  .panel-dots{gap:7px}
+  .panel-sets{margin:0 -14px;padding:2px 14px 4px}
+  .shop{grid-template-columns:1fr}
+  .prod.feat{grid-column:auto}
+}

@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { products, DEVICE_NAME } from "@/lib/shades";
+import { products, DEVICE_NAME, CURRENCY } from "@/lib/shades";
 import { useBag } from "./Bag";
 import Logo from "./Logo";
 
@@ -19,7 +19,7 @@ export function Shop() {
     <section id="shop" className="sec light">
       <div className="sec-head">
         <motion.h2 {...reveal} className="display">One device.<br />Every colour.</motion.h2>
-        <motion.p {...reveal} className="lede">The {DEVICE_NAME} recolours TINTATips press-ons to any colour you pick in the app, whenever you want. Buy it once and never buy polish again.</motion.p>
+        <motion.p {...reveal} className="lede">The {DEVICE_NAME} shifts your Smart Tips to any colour you pick in the app, whenever you want. Choose the device, a set of tips, or both together.</motion.p>
       </div>
       <div className="shop">
         {products.map((p, k) => (
@@ -31,7 +31,7 @@ export function Shop() {
             <div className="prod-body">
               <div className="card-foot">
                 <div><h3>{p.name}</h3><p>{p.sub}</p></div>
-                <span className="card-price">${p.price}</span>
+                <span className="card-price">{CURRENCY}{p.price}</span>
               </div>
               <ul>{p.items.map((x) => <li key={x}>{x}</li>)}</ul>
               <button className="pill dark sm" onClick={() => add()}>Add to bag

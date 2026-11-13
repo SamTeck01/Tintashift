@@ -1,51 +1,36 @@
 "use client";
-import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { presets, products, DEVICE_NAME, backdrop } from "@/lib/shades";
+import { presets, products, sets, surface, isLight, DEVICE_NAME, CURRENCY, type SetId } from "@/lib/shades";
 import { useBag } from "./Bag";
+import HeroScene from "./HeroScene";
 import Logo from "./Logo";
 
-const Scene = dynamic(() => import("./Scene"), { ssr: false });
 const ease = [0.22, 1, 0.36, 1] as const;
 const device = products[0];
 
 export default function Hero() {
   const [hex, setHex] = useState(presets[5].hex);
   const [custom, setCustom] = useState("#7c4dff");
-  const [set, setSet] = useState<1 | 2>(1);
-  const wrap = useRef<HTMLDivElement>(null);
-  const progress = useRef(0);
-  useEffect(() => {
-    const on = () => {
-      const el = wrap.current; if (!el) return;
-      const max = el.offsetHeight - window.innerHeight;
-      progress.current = Math.min(1, Math.max(0, -el.getBoundingClientRect().top / Math.max(1, max)));
-    };
-    on(); window.addEventListener("scroll", on, { passive: true }); window.addEventListener("resize", on);
-    return () => { window.removeEventListener("scroll", on); window.removeEventListener("resize", on); };
-  }, []);
+  const [set, setSet] = useState<SetId>("si001");
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { count, add, flash } = useBag();
   const preset = presets.find((p) => p.hex === hex);
   const label = preset ? preset.name : "Your colour";
-  const bg = backdrop(hex);
+  const bg = surface(hex);
 
   useEffect(() => { document.documentElement.style.setProperty("--shade", hex); }, [hex]);
 
   const pickCustom = (v: string) => {
     setCustom(v);
     if (debounce.current) clearTimeout(debounce.current);
-    debounce.current = setTimeout(() => setHex(v), 220);
+    debounce.current = setTimeout(() => setHex(v), 120);
   };
 
   return (
-    <div ref={wrap} className="hero-wrap">
-    <section className="hero" style={{ background: bg }}>
-      <div className="hero-stack">
-        <div className="scene"><Scene hex={hex} bg={bg} progress={progress} set={set} /></div>
-        <div className="hero-shade" />
-      </div>
+    <section className={`hero ${isLight(bg) ? "ink-dark" : ""}`} style={{ background: bg }}>
+      <HeroScene tint={bg} tip={hex} set={set} />
+      <div className="hero-shade" />
 
       <header className="nav">
         <a href="#" className="nav-logo"><Logo /></a>
@@ -59,34 +44,29 @@ export default function Hero() {
       </header>
 
       <div className="hero-copy">
-        <p className="eyebrow">{DEVICE_NAME}</p>
+        <p className="eyebrow">{DEVICE_NAME} · Smart Tips</p>
         <h1 className="shade-name">Any colour.<br />
           <AnimatePresence mode="wait">
             <motion.span key={label + hex} className="hero-colour"
               initial={{ opacity: 0, y: 12, filter: "blur(6px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: -8, filter: "blur(6px)" }} transition={{ duration: .5, ease }}>
+              exit={{ opacity: 0, y: -8, filter: "blur(6px)" }} transition={{ duration: .35, ease }}>
               <i style={{ background: hex }} />{label}
             </motion.span>
           </AnimatePresence>
         </h1>
-        <p className="shade-note">Colour-changing TINTATips, powered by the TINTAShifter. Pick a colour, pick a nail set, and the French tips shift. No polish, no salon.</p>
+        <p className="shade-note">Press-on nails that change colour. Pick a shade, slide a tip into the {DEVICE_NAME}, and it shifts in seconds.</p>
         <div className="cta-row">
-          <button className="pill dark" onClick={() => add()}>Add to bag <span className="price">${device.price}</span></button>
+          <button className="pill dark" onClick={() => add()}>Add to bag <span className="price">{CURRENCY}{device.price}</span></button>
           <a className="pill outline" href="#how">How it works <span aria-hidden>↓</span></a>
         </div>
       </div>
 
-      <div className="sets">
-        {([1, 2] as const).map((n) => (
-          <button key={n} className={`set glass ${set === n ? "on" : ""}`} onClick={() => setSet(n)} aria-pressed={set === n}>
-            <b>SI00{n}</b>{n === 1 ? "Bow" : "Star"}
-          </button>
-        ))}
-      </div>
-
-      <motion.div className="picker glass" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8, ease, delay: .3 }}>
-        <span className="picker-label">Pick a colour</span>
-        <div className="picker-dots">
+      <motion.div className="panel glass" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8, ease, delay: .2 }}>
+        <div className="panel-row">
+          <span className="panel-label">Pick a colour</span>
+          <span className="panel-hex">{hex.toUpperCase()}</span>
+        </div>
+        <div className="panel-dots">
           {presets.map((p) => (
             <button key={p.hex} className={`dot ${p.hex === hex ? "is-active" : ""}`} style={{ ["--c" as string]: p.hex }}
               onClick={() => setHex(p.hex)} aria-label={p.name} title={p.name} />
@@ -95,13 +75,20 @@ export default function Hero() {
             <input type="color" value={custom} onChange={(e) => pickCustom(e.target.value)} aria-label="Pick any colour" />
           </label>
         </div>
-        <span className="picker-hex">{hex.toUpperCase()}</span>
+        <div className="panel-row"><span className="panel-label">Nail set</span><span className="panel-hex">{CURRENCY}39 a set</span></div>
+        <div className="panel-sets" role="radiogroup" aria-label="Nail set">
+          {sets.map((s) => (
+            <button key={s.id} role="radio" aria-checked={set === s.id} className={`set ${set === s.id ? "on" : ""}`} onClick={() => setSet(s.id)}>
+              <span className="set-nail" style={{ ["--b" as string]: s.base ?? hex }} />
+              <span className="set-txt"><b>{s.name}</b>{s.tag}</span>
+            </button>
+          ))}
+        </div>
       </motion.div>
 
       <AnimatePresence>
         {flash && <motion.div className="toast glass" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>{flash}</motion.div>}
       </AnimatePresence>
     </section>
-    </div>
   );
 }

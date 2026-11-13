@@ -7,7 +7,7 @@ const font = Inter_Tight({ subsets: ["latin"], weight: ["300", "400", "500", "60
 
 export const metadata: Metadata = {
   title: "Tintashift — Wearable Beauty Technology",
-  description: "Colour-shifting smart press-on nails. One wand, six shades. Live in colour.",
+  description: "Colour-changing smart press-on nails, powered by the TINTAShifter. Live in colour.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
