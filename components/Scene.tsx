@@ -1,6 +1,6 @@
 "use client";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer, useGLTF, useTexture } from "@react-three/drei";
+import { ContactShadows, Environment, Lightformer, useGLTF } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
@@ -10,8 +10,6 @@ import * as THREE from "three";
    set shifts together.
    ============================================================ */
 const tipUniform = { value: new THREE.Color("#2f56c9") };
-const handBase = { value: new THREE.Color("#b9a6e2") };          // nail-set base colour on the hand
-const SET_BASE = { 1: new THREE.Color("#b9a6e2"), 2: new THREE.Color("#a8959f") } as const;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const seg = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
@@ -46,13 +44,13 @@ const chromeMat = new THREE.MeshPhysicalMaterial({ color: "#e8e8ee", metalness: 
 const crystalGemMat = new THREE.MeshPhysicalMaterial({ color: "#ffffff", metalness: 0.2, roughness: 0.02, iridescence: 1, flatShading: true });
 useGLTF.preload("/models/si001.glb", false, true);
 useGLTF.preload("/models/si002.glb", false, true);
-useGLTF.preload("/models/hand.glb", false, true);
+useGLTF.preload("/models/hand.glb");
 
 const FLOAT = Array.from({ length: 10 }, (_, i) => {
   const a = (i / 10) * Math.PI * 2 + 0.3;
   return {
     series: i % 2 ? 2 : 1,
-    p: [Math.cos(a) * 3.0, Math.sin(a) * 1.35 + 0.25, Math.sin(a * 2) * 0.5 - 0.6] as const,
+    p: [Math.cos(a) * 2.3 - 1.35, Math.sin(a) * 1.45 + 0.3, Math.sin(a * 2) * 0.5 - 0.6] as const,   // kept to the Shifter's side, clear of the hand
     r: [Math.sin(i) * 0.25, Math.cos(i * 1.7) * 0.45, a + Math.PI / 2 + Math.sin(i) * 0.4] as const,
     s: 1.05 + (i % 4) * 0.1,
   };
@@ -84,6 +82,7 @@ function FloatingTips({ progress, set }: { progress: React.RefObject<number>; se
   const g1 = useGLTF("/models/si001.glb", false, true), g2 = useGLTF("/models/si002.glb", false, true);
   const geo1 = useMemo(() => geoOf(g1.scene), [g1]), geo2 = useMemo(() => geoOf(g2.scene), [g2]);
   const items = useRef<THREE.Mesh[]>([]);
+  const mobile = useThree((s) => s.size.width / s.size.height < 0.9);
   useFrame(({ clock }) => {
     const p = progress.current ?? 0;
     const k = smooth(seg(p, 0.14, 0.4)) * (1 - smooth(seg(p, 0.76, 0.98)));
@@ -94,7 +93,7 @@ function FloatingTips({ progress, set }: { progress: React.RefObject<number>; se
       m.position.set(f.p[0] * spread, f.p[1] * spread + Math.sin(t * 0.9 + i) * 0.07, f.p[2] + k * 2);
       m.rotation.set(f.r[0] + Math.sin(t * 0.5 + i) * 0.15, f.r[1] + Math.sin(t * 0.35 + i * 2) * 0.5, f.r[2]);
       m.scale.setScalar(f.s * (1 - k * 0.7));
-      m.visible = k < 0.97 && f.series === set;
+      m.visible = k < 0.97 && f.series === set && !mobile;   // phones: the hand shows the set, the small scene stays uncluttered
     });
   });
   return (
@@ -218,42 +217,40 @@ function Shifter({ glowRef }: { glowRef: React.RefObject<number> }) {
 }
 
 /* ============================================================
-   Hand: mesh reconstructed from a photo, textured by projecting that photo.
-   hand-nails.png marks the five nails (r = nail, g = 0 cuticle … 1 tip), so the
-   TINTATips on the hand shift at the French tip like the floating ones.
-   Mesh frame: back of the hand +z, middle fingertip at TIP.
+   Hand: MakeHuman base mesh and skin (CC0), built by tools/build_hand.py.
+   Model frame: middle fingertip at the origin, fingers along −x, back of the hand +z.
+   The file carries five nodes, nail-1 … nail-5 (thumb … little finger), one at each cuticle
+   (+y back along the finger, +z the nail normal, scale = finger width). The hand wears the
+   same Signature tip meshes that float around the Shifter, so set and tip colour match.
    ============================================================ */
-const TIP = new THREE.Vector3(-0.8, -0.92, 0.28);
-const HAND_ROT_Z = -1.007;   // turns the middle finger to point along −x
-const HAND_TILT = -0.2;      // tips the back of the hand up toward the camera
-const HAND_SCALE = 1.15;
+const HAND_SCALE = 2.0;
+const NAIL_FIT = 1.2;         // tip width relative to the finger width
+const skinMat = new THREE.MeshPhysicalMaterial({ color: "#e9c3ae", roughness: 0.5, sheen: 0.5, sheenRoughness: 0.5, sheenColor: new THREE.Color("#ffc9b5"), clearcoat: 0.12, clearcoatRoughness: 0.4, envMapIntensity: 0.3 });
 
-function Hand() {
-  const { scene } = useGLTF("/models/hand.glb", false, true);
-  const [skin, nails] = useTexture(["/models/hand-skin.jpg", "/models/hand-nails.png"]);
-  const { geo, mat } = useMemo(() => {
-    skin.colorSpace = THREE.SRGBColorSpace;
-    const geo = geoOf(scene);
-    const mat = new THREE.MeshPhysicalMaterial({ map: skin, roughness: 0.55, sheen: 0.6, sheenRoughness: 0.6, sheenColor: new THREE.Color("#ffd8c4"), clearcoat: 0.2, clearcoatRoughness: 0.3 });
-    const nailTex = { value: nails }, base = handBase;
-    mat.onBeforeCompile = (s) => {
-      s.uniforms.uTip = tipUniform; s.uniforms.uNails = nailTex; s.uniforms.uBase = base;
-      s.fragmentShader = s.fragmentShader
-        .replace("#include <common>", "#include <common>\nuniform vec3 uTip;\nuniform vec3 uBase;\nuniform sampler2D uNails;\nfloat nailK = 0.0;")
-        .replace("#include <map_fragment>", `#include <map_fragment>
-          vec4 nm = texture2D(uNails, vMapUv);
-          nailK = smoothstep(0.35, 0.65, nm.r);
-          float tipK = smoothstep(0.52, 0.56, nm.g);
-          diffuseColor.rgb = mix(diffuseColor.rgb, mix(uBase, uTip, tipK), nailK);`)
-        .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.1, nailK);");
-    };
-    return { geo, mat };
-  }, [scene, skin, nails]);
+function Hand({ set }: { set: 1 | 2 }) {
+  const { scene } = useGLTF("/models/hand.glb");
+  const g1 = useGLTF("/models/si001.glb", false, true), g2 = useGLTF("/models/si002.glb", false, true);
+  const tips = useMemo(() => [g1, g2].map((g) => {
+    const geo = geoOf(g.scene); geo.computeBoundingBox();
+    const b = geo.boundingBox!;
+    return { geo, k: NAIL_FIT / (b.max.x - b.min.x), top: b.max.y, under: b.min.z };
+  }), [g1, g2]);
+  const { geo, anchors } = useMemo(() => {
+    const mesh = scene.getObjectByName("hand") as THREE.Mesh;
+    skinMat.map = (mesh.material as THREE.MeshStandardMaterial).map; skinMat.needsUpdate = true;
+    const anchors = [1, 2, 3, 4, 5].map((i) => scene.getObjectByName(`nail-${i}`)!);
+    return { geo: mesh.geometry, anchors };
+  }, [scene]);
+  const tip = tips[set - 1];
   return (
-    <group rotation={[HAND_TILT, 0, 0]} scale={HAND_SCALE}>
-      <group rotation={[0, 0, HAND_ROT_Z]}>
-        <mesh geometry={geo} material={mat} position={TIP.clone().negate()} castShadow />
-      </group>
+    <group scale={HAND_SCALE}>
+      <mesh geometry={geo} material={skinMat} castShadow />
+      {anchors.map((a, i) => (
+        <group key={i} position={a.position} quaternion={a.quaternion} scale={a.scale}>
+          {/* cuticle edge on the anchor, underside resting on the finger */}
+          <mesh geometry={tip.geo} material={set === 1 ? si001 : si002} scale={tip.k} position={[0, -tip.top * tip.k, -tip.under * tip.k * 0.55]} castShadow />
+        </group>
+      ))}
     </group>
   );
 }
@@ -266,7 +263,7 @@ function Hand() {
    ============================================================ */
 const CAM = [
   { pos: new THREE.Vector3(0.9, 0.5, 9.2), look: new THREE.Vector3(1.3, 0.25, 0) },
-  { pos: new THREE.Vector3(1.5, 1.8, 8.2), look: new THREE.Vector3(1.5, 0.55, 0) },
+  { pos: new THREE.Vector3(1.5, 1.6, 8.4), look: new THREE.Vector3(1.5, 0.0, 0) },
   { pos: new THREE.Vector3(0.2, 1.7, 9.4), look: new THREE.Vector3(1.4, 0.3, 0) },
 ];
 
@@ -298,14 +295,20 @@ function Stage({ hex, progress, set }: { hex: string; progress: React.RefObject<
     const a = smooth(seg(p, 0.12, 0.42)), b = smooth(seg(p, 0.7, 0.95));
     camPos.copy(CAM[0].pos).lerp(CAM[1].pos, a).lerp(CAM[2].pos, b);
     look.copy(CAM[0].look).lerp(CAM[1].look, a).lerp(CAM[2].look, b);
-    if (mobile) { camPos.z += 7 - a * 2; camPos.x -= 1.0; look.x -= 1.0; look.y -= 1.4 - a * 0.5; }
+    if (mobile) { camPos.set(0.15 + (a - b) * 0.5, -0.2 + a * 0.6, 20.4 - a * 1.2); look.set(0.15, -0.8, 0); }
     camPos.x += pointer.x * 0.25; camPos.y += pointer.y * 0.12;
     camera.position.lerp(camPos, 1 - Math.exp(-dt * 5));
     camera.lookAt(look);
+    // phones: the product sits in the top part of the screen, above the copy
+    const pc = camera as THREE.PerspectiveCamera;
+    if (mobile) pc.setViewOffset(size.width, size.height, 0, size.height * 0.24, size.width, size.height);
+    else if (pc.view) pc.clearViewOffset();
 
     // one hand, resting beside the Shifter (no dip-in animation, per client)
-    hand.current.position.set(3.3, 0.05 + Math.sin(t * 0.7) * 0.02, 0.7);
-    handBase.value.lerp(SET_BASE[set], 1 - Math.exp(-dt * 5));
+    // desktop: beside the Shifter; phones: below it. Rides up a little as the camera rises mid-scroll.
+    const bob = Math.sin(t * 0.7) * 0.02;
+    if (mobile) hand.current.position.set(0.55, -1.55 + bob, 0.5);
+    else hand.current.position.set(2.75, -0.3 + a * (1 - b) * 0.2 + bob, 0.5);
 
     rig.current.position.y = Math.sin(t * 0.6) * 0.03 - 0.3;
   });
@@ -314,11 +317,16 @@ function Stage({ hex, progress, set }: { hex: string; progress: React.RefObject<
     <group ref={rig} rotation={[0.12, -0.28, 0]}>
       <group position={[-0.6, 0, 0]}>
         <Shifter glowRef={glow} />
-        <group ref={hand}><Hand /></group>
+        <group ref={hand} rotation={[-0.7, -0.15, 0.12]}><Hand set={set} /></group>
       </group>
       <FloatingTips progress={progress} set={set} />
     </group>
   );
+}
+
+function Floor() {
+  const mobile = useThree((s) => s.size.width / s.size.height < 0.9);
+  return <ContactShadows position={[0, mobile ? -3.1 : -1.35, 0]} opacity={0.4} scale={16} blur={2.8} far={mobile ? 5 : 3.4} color="#000" />;
 }
 
 export default function Scene({ hex, bg, progress, set }: { hex: string; bg: string; progress: React.RefObject<number>; set: 1 | 2 }) {
@@ -329,7 +337,7 @@ export default function Scene({ hex, bg, progress, set }: { hex: string; bg: str
       <directionalLight position={[3, 6, 4]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]} />
       <pointLight position={[-3, 2, 3]} intensity={6} color="#ffffff" />
       <Suspense fallback={null}><Stage hex={hex} progress={progress} set={set} /></Suspense>
-      <ContactShadows position={[0, -0.95, 0]} opacity={0.45} scale={14} blur={2.6} far={3} color="#000" />
+      <Floor />
       <Environment resolution={256}>
         <Lightformer form="rect" intensity={4} position={[0, 5, 1]} scale={[10, 2, 1]} />
         <Lightformer form="rect" intensity={2} position={[-6, 1, 2]} rotation-y={Math.PI / 2} scale={[4, 6, 1]} />

@@ -19,21 +19,25 @@ Live: https://tintashift.vercel.app (Vercel project `tintashift`, production bra
 ## Code map
 - `components/Hero.tsx`: sticky hero inside `.hero-wrap` (320svh), tracks scroll progress 0..1, colour picker, nail-set buttons.
 - `components/Scene.tsx`: React Three Fiber scene.
-  - `tipUniform`: shared French-tip colour for all nails; `handBase`: nail-set base colour on the hand.
+  - `tipUniform`: shared French-tip colour for all nails.
   - `Shifter`: coded crystal body, label canvas texture, cable, clip.
   - `FloatingTips`: `public/models/si001.glb` / `si002.glb`; vertex colour r marks raised decorations.
-  - `Hand`: `public/models/hand.glb` textured by projecting `hand-skin.jpg`; `hand-nails.png` marks nails (r = nail, g = cuticle→tip).
-  - `Stage`: camera path `CAM[0..2]` driven by scroll.
+  - `Hand`: `public/models/hand.glb`, a real modelled hand (MakeHuman, CC0) with its skin texture embedded. Nodes `nail-1`…`nail-5` (thumb…little finger) mark each cuticle; the hand wears the same `si001`/`si002` tip meshes as the floating ones, so bows/stars and the tip colour show on all five nails.
+  - `Stage`: phones (portrait) get their own layout: Shifter on top, hand below, floating tips hidden, scene shifted into the top of the screen with `setViewOffset`.
+  - Camera path `CAM[0..2]` driven by scroll.
   - `geoOf()` converts meshopt-quantised glTF to float geometry. Do not call computeVertexNormals on the raw quantised geometry.
 - `components/Sections.tsx`: shop, technology, how-to, outfits, newsletter, footer. `lib/shades.ts`: device name, colour presets, products, prices.
+- `tools/build_hand.py`: rebuilds `hand.glb` from the MakeHuman `base.obj` and a skin PNG (URLs in the file header). Swap the skin PNG there to change skin tone.
 - Headless screenshots need `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader` and long timeouts.
 
 ## How the 3D models were made (free)
-Hunyuan3D-2 Hugging Face Space, endpoint `/shape_generation` (shape only, works on the anonymous GPU quota), from crops of the client's Instagram photos and an AI hand photo. Then `gltf-transform weld/simplify`, a Python bake (UV projection, nail mask, decoration vertex colours), then `gltf-transform meshopt`. Textured generation and TRELLIS need a browser-logged-in HF account or paid credits.
+The **tips** (`si001.glb`, `si002.glb`): Hunyuan3D-2 Hugging Face Space, endpoint `/shape_generation` (shape only, works on the anonymous GPU quota), from crops of the client's Instagram photos. Then `gltf-transform weld/simplify`, a Python bake (decoration vertex colours), then `gltf-transform meshopt`. Textured generation and TRELLIS need a browser-logged-in HF account or paid credits.
+The **hand** is not AI-generated: it is the MakeHuman base mesh (CC0), see `tools/build_hand.py`. The earlier AI-reconstructed hand looked smeared and was dropped.
 
 ## Known gaps / next steps
-- **Hand nail mask is misaligned**: only one nail on the hand takes the set/tip colour, the others stay nude. Fix the nail ellipses in the bake (see scratch notes above) or re-project. The 3D bows/stars only appear on the floating tips, not on the hand.
-- Mobile hero was not re-checked after the last layout change (headless screenshot timed out).
+- The hand is in MakeHuman's rest pose (fingers spread) and is not rigged; a more relaxed pose would need bone weights added in the build script.
+- The tips on the hand are the AI-reconstructed meshes scaled down, so they look a little lumpy up close.
+- Mobile hero was checked in headless Chromium at 390×780 only.
 - The Shifter is coded geometry, close but not exact (the AI mesh of it was too mushy). Real CAD from the client would be best.
 - Bag is a counter only; no Shopify checkout yet (Dave offered Shopify credentials). Newsletter form does not store emails.
 - Logo is a placeholder swirl. The white aluminium device in the older videos is an earlier design; use the crystal Shifter.
