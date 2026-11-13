@@ -4,17 +4,28 @@ Marketing/storefront site for **TINTAShift** ("Wearable Beauty Technology · liv
 Live: https://tintashift.vercel.app (Vercel project `tintashift`, production branch `ccr-a563bc74-rhkfx4`; every push redeploys).
 
 ## The product (get this right)
-- **TINTAShifter** ("the Shifter", "the machine"): clear crystal block labelled "TINTAShift" with a chrome connector, a clear cable and a crystal fingertip clip. Price **249**.
-- **TINTATips**: press-on nails. Only these change colour, and only at the **French tip**. Sold as designed sets, the **Signature Series SI001** (lilac, bows, pearls) and **SI002** (rose-grey chrome, silver stars). Price **39** per set. All have Swarovski crystals, almond shape.
-- Colour is NOT a product. The Shifter changes the tip to any colour. Never present shades as things to buy.
+Studied on 13 Nov 2026 from the brand's Instagram (@tintashift, 22 posts), tintashift.store (Shopify) and tintashift.uk. Photos are in `docs/reference/`.
+- **Brand line:** "Wearable Beauty Technology. Smart color-changing nails are the first expression. Live in Color." Tone: fashion editorial, soft lilac/silver/iridescent, chameleon logo.
+- **How it works (their words):** pick a shade in the app, slide the tip into the Shifter, the tip changes in seconds. "App controls the palette. Shifter controls the state." "100 shades. One set."
+- **TINTAShifter** (store: "Device", **€249**). Two designs exist in their photos:
+  - *Crystal* (newest posts and the kit flat-lay, `shifter-crystal-kit.jpg`): clear cut-crystal bar with emerald-cut facets, "TINTAShift" printed in black on a frosted inner panel, one round Swarovski stone near the cap end, chrome collar and nozzle, a clear soft tube looping to a small **bone-shaped** crystal clip with a chrome spring clip inside. This is the one to build.
+  - *Aluminium* (older videos and still the store's product photo, `shifter-aluminium-store-photo.jpg`): silver tube with a button and speaker holes; the nail tip slots into the end.
+- **Smart Tips / TINTATips** (store: "Smart Tips", **€39** each): press-on nails, almond shape, Swarovski crystals, colour shifts at the **French tip**. The store sells five series: **MUSE, ICON, SPOTLIGHT, CHAPTER, SIGNATURE**. Instagram shows Signature SI001 (lilac, bows, pearls) and SI002 (rose-grey chrome, silver stars), and the Spotlight "Design Series" (blue/glass, shells, bows).
+- **The Complete Shift** (store: "Complete set", **€288**): Shifter plus Smart Tips.
+- Colour is NOT a product. Never present shades as things to buy. (The store's current hero wrongly shows six polish shades with "12 ml · Wide brush", copied from the reference.)
 - Kit contents: tips, adhesive tabs, 2 alcohol pads, nail file, crystal cuticle pusher, Shifter, silver aesthetics bag.
-- Client sites for reference: tintashift.store (shop, was timing out), tintashift.uk. Instagram: @tintashift.
+- Shopify catalogue is readable at `https://tintashift.store/products.json`.
+
+## The reference site (how it really works)
+VERNIS by Ascenta Studio, https://ascentastudio.com/vernis/. SamTeck supplied its saved code. **It is not real-time 3D.** Its own comments say: every view is a set of pixel-aligned AI-generated photos (one per shade, wide shot and close-up), cross-faded in a small WebGL shader; the camera move between wide and close-up is a short AI-generated video whose first and last frames are those photos. That is why it looks photoreal and loads instantly. Do not copy its assets; copy the technique.
 
 ## What Dave wants for the hero (his latest brief)
 - Follow the reference reel (ascenta.studio nail-polish site): one hand, big name top right, colour panel.
 - **Machine on the left, one hand beside it.** No animation of the finger going into the machine ("too much animation").
 - Keep the **colour panel**; under/near it a control to **switch the nail set** (SI001/SI002). The hand's nails change with it.
 - He said the earlier version was "not close to the scroll animation" of the reference, so scroll-driven camera movement stays, kept subtle.
+- His words (WhatsApp): "keep the style with 1 hand, like in the example", "without putting the finger inside the machine", "no too much animation", "keep the color panel, and then under it you can slide what nails you want to switch it with, like the products", "on the left side is the machine, and then the hand where you can switch the color and also the model / nail set".
+- SamTeck's verdict on the current live hero (13 Nov): not good enough. The real-time 3D looks fake next to the reference and loads slowly. Direction under discussion: photoreal pre-rendered imagery like the reference, with the tip colour changed live by a mask.
 
 ## Code map
 - `components/Hero.tsx`: sticky hero inside `.hero-wrap` (320svh), tracks scroll progress 0..1, colour picker, nail-set buttons.
