@@ -1,10 +1,23 @@
 "use client";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DEVICE_NAME, CURRENCY, type Product } from "@/lib/shades";
 import { useBag } from "./Bag";
 import Logo from "./Logo";
+
+/** A looping clip that costs nothing until it is about to scroll into view, and pauses when it leaves. */
+function Clip({ src, className = "vid" }: { src: string; className?: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = ref.current; if (!v) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { if (!v.src) v.src = src; v.play().catch(() => {}); } else v.pause();
+    }, { rootMargin: "300px 0px" });
+    io.observe(v); return () => io.disconnect();
+  }, [src]);
+  return <video ref={ref} className={className} muted loop playsInline preload="none" />;
+}
 
 const reveal = {
   initial: { opacity: 0, y: 28 },
@@ -93,8 +106,8 @@ export function Technology() {
           </div>
         </motion.div>
         <motion.div {...reveal} className="tech-media">
-          <video className="vid tall" src="/vid/shift.mp4" autoPlay muted loop playsInline />
-          <video className="vid" src="/vid/wand.mp4" autoPlay muted loop playsInline />
+          <Clip className="vid tall" src="/vid/shift.mp4" />
+          <Clip src="/vid/wand.mp4" />
           <div className="vid img-wrap"><Image src="/img/app.jpg" alt="Tintashift app colour palette" fill sizes="30vw" /></div>
         </motion.div>
       </div>
@@ -107,7 +120,7 @@ export function Outfits() {
   return (
     <section className="sec light">
       <div className="outfit">
-        <motion.div {...reveal} className="outfit-vid"><video className="vid" src="/vid/outfits.mp4" autoPlay muted loop playsInline /></motion.div>
+        <motion.div {...reveal} className="outfit-vid"><Clip src="/vid/outfits.mp4" /></motion.div>
         <motion.div {...reveal} className="outfit-copy">
           <h2 className="display">Match the outfit,<br />not the appointment.</h2>
           <p className="lede">Silk in the morning, denim by noon, black for the evening. Pick the colour of the outfit in the app and shift your TINTATips to match. No salon, no remover.</p>

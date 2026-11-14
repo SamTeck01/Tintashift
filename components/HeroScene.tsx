@@ -91,10 +91,18 @@ export default function HeroScene({ tint, tip, set }: { tint: string; tip: strin
       const r = cv.getBoundingClientRect(); W = r.width; H = r.height;
       const dpr = Math.min(devicePixelRatio || 1, 2);
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); gl.viewport(0, 0, cv.width, cv.height);
-      if (W / H < 0.8) {                       // phones: the left 60% of the photo across the screen, under the nav
+      if (W / H < 0.8 || W <= 760) {           // phones and upright tablets: the left 60% of the photo across the screen, under the nav
         const f = W / (IMG_W * 0.6); view = [-0.085 * IMG_W * f, 58, f];
-      } else {                                 // cover, biased left so device and hand stay in frame
-        const f = Math.max(W / IMG_W, H / IMG_H); view = [(W - IMG_W * f) * 0.3 - W * 0.035, (H - IMG_H * f) * 0.5, f];
+      } else {
+        // Wide screens: fill the width. Squarer screens: a little larger than that, with plain surface below
+        // the picture (its lower edge fades out). The top edge always meets the top of the screen, because
+        // the arm is cut there.
+        const byW = W / IMG_W, f = Math.max(byW, Math.min(H / IMG_H, byW * 1.12));
+        const panelLeft = W - 28 - Math.min(400, W * 0.34);
+        let x0 = (W - IMG_W * f) * 0.3 - W * 0.035;
+        x0 = Math.min(x0, panelLeft - 16 - 925 * f);      // the Shifter's clip (x≈925 in the photo) stays clear of the panel
+        x0 = Math.max(x0, 8 - 205 * f);                   // but the Shifter's left end (x≈205) stays on screen
+        view = [Math.min(0, x0), Math.min(0, (H - IMG_H * f) * 0.5), f];
       }
       ask();
     };

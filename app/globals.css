@@ -4,7 +4,7 @@
   --r:22px; --ease:cubic-bezier(.22,1,.36,1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;overflow-x:clip}
 body{font-family:var(--font),system-ui,sans-serif;background:var(--paper);color:var(--ink);overflow-x:hidden}
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
@@ -136,7 +136,7 @@ img{display:block}
 .news{text-align:center;border-top:1px solid var(--line)}
 .news-inner{display:flex;flex-direction:column;align-items:center;gap:16px}
 .news-form{display:flex;gap:8px;margin-top:14px;width:min(440px,100%)}
-.news-form input{flex:1;height:44px;border-radius:999px;border:1px solid var(--line);background:#fff;padding:0 20px;font:inherit;font-size:14px;outline:none}
+.news-form input{flex:1;min-width:0;height:44px;border-radius:999px;border:1px solid var(--line);background:#fff;padding:0 20px;font:inherit;font-size:14px;outline:none}
 .news-form input:focus{border-color:var(--ink)}
 .news-form .pill{height:44px}
 .news-done{margin-top:14px;font-size:14px}
@@ -234,18 +234,26 @@ img{display:block}
 .shop{grid-template-columns:repeat(4,1fr)}
 .prod.feat{grid-column:span 2}
 @media (max-width:1100px){.shop{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:760px){
+/* phones and upright tablets: picture on top, copy under it, panel at the bottom (same rule as HeroScene) */
+@media (max-width:760px),(max-aspect-ratio:4/5){
   .hero{height:auto;min-height:max(100svh,calc(58px + 88vw + 440px))}
   .hero-copy{top:calc(58px + 88vw)!important;bottom:auto!important;left:16px;right:16px;max-width:none;align-items:flex-start;text-align:left}
   .shade-name{font-size:40px;margin:8px 0 12px}
   .shade-note{display:none}
   .cta-row{margin-top:4px}
-  .panel{left:12px;right:12px;bottom:12px;width:auto;padding:14px 14px 12px}
+  .panel{left:12px;right:12px;bottom:12px;width:auto;max-width:520px;padding:14px 14px 12px}
   .panel .dot{width:25px;height:25px}
   .panel-dots{gap:7px}
   .panel-sets{margin:0 -14px;padding:2px 14px 4px}
+}
+@media (max-width:760px){
   .shop{grid-template-columns:1fr}
   .prod.feat{grid-column:auto}
+}
+/* mid-size screens: keep the ten colour dots on one row in the narrower panel */
+@media (min-width:761px) and (max-width:1180px){
+  .panel .dot{width:24px;height:24px}
+  .panel-dots{gap:6px}
 }
 
 /* ---------- bag drawer ---------- */

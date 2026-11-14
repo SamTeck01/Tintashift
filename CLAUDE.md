@@ -33,7 +33,8 @@ VERNIS by Ascenta Studio, https://ascentastudio.com/vernis/. SamTeck supplied it
 - `public/hero/<name>.webp` + `<name>-m.webp`: photo and maps (R keep, G tip mask or device sparkle, B shadow) for `device`, `si001`, `si002`, `spotlight`, `chapter`, `spectrum`. `lib/hero-layers.json`: image size and each hand's vertical nudge.
 - `tools/build_hero.py`: builds those layers from `docs/source-images/wide-*.png` (background removal with rembg, backdrop flattening, tip key). Re-run it after adding or replacing a source image.
 - `lib/shades.ts`: colour presets, hero nail sets, the store's seven products and prices, `surface()` (tabletop colour for a picked shade).
-- `lib/shopify.ts`: the Shopify connection (see below). `components/Bag.tsx`: bag state (kept in localStorage) and the bag drawer.
+- `lib/shopify.ts`: the Shopify connection (see below). `components/Bag.tsx`: bag state (kept in localStorage) and the bag drawer, which opens whenever something is added.
+- `app/layout.tsx`: preloads the first hero picture; mounts Vercel Analytics and Speed Insights (they report only once switched on in the Vercel dashboard).
 - `components/Logo.tsx`: the brand's chameleon (`public/img/chameleon.png`, cut from their Instagram artwork, low resolution) plus the wordmark set in type.
 - `components/Sections.tsx`: shop, technology, how-to, outfits, newsletter, footer.
 - Headless screenshots: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
@@ -42,6 +43,7 @@ VERNIS by Ascenta Studio, https://ascentastudio.com/vernis/. SamTeck supplied it
 Dave asked on 13 Nov 2026 to connect the site to his Shopify store, tintashift.store. It is connected without a token or admin access:
 - **Catalogue:** `getProducts()` reads the store's public feed `https://tintashift.store/products.json` on the server and refreshes every five minutes (`revalidate = 300` on the page), so names, prices, stock and new products follow Shopify. Our own picture, badge and bullets are kept per product handle; the Shifter and Complete Shift keep our crystal pictures because the store's photo still shows the old aluminium device. If the feed fails, the static list in `lib/shades.ts` is used.
 - **Checkout:** the bag's Checkout button is a Shopify cart link, `https://tintashift.store/cart/<variantId>:<qty>,…`, which opens his real Shopify checkout with those items. Tested: it redirects to the Shopify checkout.
+- **SamTeck said on 14 Nov 2026 that tintashift.store is "the old store".** Dave will connect the right store himself with his Codex from the GitHub repo (`AGENTS.md` and the README section "Connecting a Shopify store" are written for that). The new store's domain was not given.
 - To use another store set `NEXT_PUBLIC_SHOPIFY_DOMAIN`. The site itself stays a Next.js app on Vercel; it is not a Shopify theme, so there is no theme file to upload. Pointing his domain at Vercel is done in Vercel's domain settings.
 - Not done: discount codes, customer accounts and a cart shared with the Shopify theme. Those need the Storefront API and a Storefront access token from Dave's Shopify admin (Headless channel).
 
@@ -59,8 +61,9 @@ Figma's image generator (`generate_image`, model `gemini-3.1-flash-image`), in S
 - Each set is a different generated hand, so skin and pose change slightly when switching sets. The Spotlight image has a bracelet and a ring.
 - Newsletter form does not store emails. The chameleon logo is cut from a small Instagram image; ask Dave for the vector logo.
 - No real order has been placed through the site; the checkout link was only followed as far as the Shopify checkout page.
-- Checked in headless Chromium at 1440×810 and 390×780 only, not on real devices.
+- Checked in headless Chromium only, at widths from 360 to 1920 px (no sideways scroll at any of them), not on real devices.
+- Phones and upright tablets (`max-width:760px` or aspect narrower than 4:5) use the stacked layout; the same rule is in `HeroScene.tsx` and `globals.css` and must stay in step.
 
 ## Rules
-- Develop on `ccr-a563bc74-rhkfx4`, commit and push when done. Keep Next.js patched (Vercel blocks vulnerable versions).
+- Develop on `ccr-a563bc74-rhkfx4` (Vercel production) and push the same commits to `main` (SamTeck asked for `main` on 14 Nov 2026 so Dave's Codex can pick the repo up). Commit and push when done, without asking. Keep Next.js patched (Vercel blocks vulnerable versions).
 - Do not copy the reference site's photos or assets.

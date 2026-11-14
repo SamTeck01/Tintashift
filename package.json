@@ -8,6 +8,8 @@
     "start": "next start"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.1.0",
     "framer-motion": "^11.18.2",
     "next": "^15.5.29",
     "react": "^19.1.1",

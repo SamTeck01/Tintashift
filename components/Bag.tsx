@@ -27,6 +27,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
     setLines((ls) => ls.some((l) => l.variantId === p.variantId)
       ? ls.map((l) => (l.variantId === p.variantId ? { ...l, qty: l.qty + 1 } : l))
       : [...ls, { variantId: p.variantId, name: p.name, price: p.price, img: p.img, qty: 1 }]);
+    setShown(true);                      // adding something opens the bag, so the next step (checkout) is in view
     setFlash(`${p.name} added to bag`);
     setTimeout(() => setFlash(null), 1600);
   };
