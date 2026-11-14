@@ -16,6 +16,14 @@ Studied on 13 Nov 2026 from the brand's Instagram (@tintashift, 22 posts), tinta
 - Kit contents: tips, adhesive tabs, 2 alcohol pads, nail file, crystal cuticle pusher, Shifter, silver aesthetics bag.
 - Shopify catalogue is readable at `https://tintashift.store/products.json`.
 
+## Decisions from SamTeck on 14 Nov 2026 (these override the notes above where they differ)
+- **Use the aluminium Shifter, not the crystal one.** Studied from their photos (`docs/reference/shifter-aluminium-*.jpg`): a slim bar of matte silver anodised aluminium, fine bead-blasted finish, roughly 11 cm long, soft rounded-triangle cross-section. "TINTAShift" engraved along the side. Near one end an oval translucent grey button and a 2×4 grid of small holes. That end is open with a white plastic rim and a nail-shaped holder inside; **the nail slides into this open end**, on the finger. A pink-to-teal gradient version also appears.
+- **The whole nail changes colour, not just the French tip.** Decorations (bows, stars, pearls) stay on top.
+- **Opening shot framed like the reference:** camera further back, hand and device small, plenty of empty surface.
+- **Close-up view:** the picture is the hand with a nail dipped into the device. The move into it should be a real video like the reference's (`ida-*.mp4` / `vuelta-*.mp4`); that needs a video model, which needs Weave linked.
+- Finish the normal Next.js site; Dave converts it for Shopify himself with Codex. No theme file from us.
+- Candidate pictures for this direction: `docs/source-images/candidate-alu-wide.png` and `candidate-alu-close.png` (green = key colour for the picked shade).
+
 ## The reference site (how it really works)
 VERNIS by Ascenta Studio, https://ascentastudio.com/vernis/. SamTeck supplied its saved code. **It is not real-time 3D.** Its own comments say: every view is a set of pixel-aligned AI-generated photos (one per shade, wide shot and close-up), cross-faded in a small WebGL shader; the camera move between wide and close-up is a short AI-generated video whose first and last frames are those photos. That is why it looks photoreal and loads instantly. Do not copy its assets; copy the technique.
 
