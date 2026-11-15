@@ -106,7 +106,7 @@ export default function HeroScene({ tint, nail, set, close, onPick, onHover }: {
         // the portrait photo fills the screen (cover), anchored to the top: hand and Shifter sit in the top half,
         // the copy and the panel sit over the empty surface below, like the reference on a phone
         const f = Math.max(W / L.w, H / L.h); view = [(W - L.w * f) / 2, Math.min(0, (H - L.h * f) * 0.15), f];
-        const g = Math.max(W / L.w, H / L.h); cview = [(W - L.w * g) / 2, Math.min(0, (H - L.h * g) * 0.15), g];
+        const g = Math.max(W / L.w, H / L.h) * 1.18; cview = [(W - L.w * g) * 0.45, H * 0.13, g];   // below the back button, nail and device in the middle
       } else {
         const byW = W / L.w, f = Math.max(byW, Math.min(H / L.h, byW * 1.12));
         const panelLeft = W - 28 - Math.min(400, W * 0.34);
