@@ -54,7 +54,7 @@ def edge_fade(h, w, px=48):                              # 1 inside, 0 at the ri
     return ss(0, px, w - 1 - xx) * ss(0, px, h - 1 - yy)
 
 def save(name, im, keep, nail, shade):
-    im.save(f"{OUT}/{name}.webp", quality=88, method=6)
+    im.save(f"{OUT}/{name}.webp", quality=80, method=6)
     q = lambda v, step: np.round(np.clip(v, 0, 1) * 255 / step) * step
     m = np.clip(np.stack([q(keep, 6), q(nail, 6), q(ndi.gaussian_filter(shade, 1.3), 3)], -1), 0, 255).astype(np.uint8)
     Image.fromarray(m).save(f"{OUT}/{name}-m.webp", lossless=True, method=6)   # lossless: lossy WebP smears channels

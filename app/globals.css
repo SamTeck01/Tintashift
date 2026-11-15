@@ -237,7 +237,7 @@ img{display:block}
 /* phones and upright tablets: one full screen like the reference. The portrait photo fills it with hand and
    Shifter in the top half; copy and panel sit over the empty surface below. Same rule as isPhone() in HeroScene. */
 @media (max-width:760px),(max-aspect-ratio:4/5){
-  .hero{height:100svh;min-height:600px}
+  .hero{height:100svh;min-height:0}
   .hero-copy{top:auto!important;bottom:calc(var(--panel-h,172px) + 22px)!important;left:18px;right:18px;max-width:none;align-items:flex-start;text-align:left}
   .hero-copy .eyebrow{display:none}
   .shade-name{font-size:clamp(34px,10vw,44px);margin:0 0 12px;flex-direction:row;flex-wrap:wrap;gap:0 .25em}
@@ -346,3 +346,28 @@ img{display:block}
 }
 .hero.is-close .set-row{display:none!important}
 @media (max-width:760px),(max-aspect-ratio:4/5){.shade-name .any{display:none}}
+/* very small phones */
+@media (max-width:360px){
+  .hero.is-close .panel .dot{width:24px;height:24px}
+  .hero.is-close .panel{padding:12px 14px 12px}
+  .hero.is-close .panel-head b{font-size:26px}
+  .hero.is-close .panel .pill.wide{height:46px}
+}
+@media (max-height:600px) and (max-aspect-ratio:4/5){.shade-name{font-size:34px;margin-bottom:10px}.cta-row .pill{height:46px}}
+/* phones held sideways: short screen, keep everything on it */
+@media (max-height:520px) and (min-aspect-ratio:4/5){
+  .hero{min-height:0;height:100svh}
+  .nav{padding:10px 18px}
+  .nav-links{display:none}
+  .hero-copy{top:58px}
+  .hero-copy .eyebrow,.shade-note{display:none}
+  .shade-name{font-size:30px;margin:0 0 10px}
+  .cta-row .pill{height:38px}
+  .panel{bottom:10px;padding:10px 12px;gap:6px;width:min(340px,40vw)}
+  .panel .set{padding:4px 10px 4px 6px}
+  .set-nail{height:22px;width:13px}
+  .hero .back{top:58px}
+  .hero.is-close .panel{top:58px;bottom:auto}
+  .hero.is-close .panel-head b{font-size:24px}
+  .hero.is-close .panel .pill.wide{height:40px}
+}
