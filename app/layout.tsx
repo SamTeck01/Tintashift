@@ -17,7 +17,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={font.variable}>
       <head>
         {/* the first hero picture: start fetching it before any script runs */}
-        {["device", "device-m", "si001", "si001-m"].map((f) => <link key={f} rel="preload" as="image" type="image/webp" href={`/hero/${f}.webp`} />)}
+        {["device", "device-m", "si001", "si001-m"].map((f) => <link key={f} rel="preload" as="image" type="image/webp" href={`/hero/${f}.webp`} media="(min-width:761px) and (min-aspect-ratio:4/5)" />)}
+        {["device", "device-m", "si001", "si001-m"].map((f) => <link key={"m" + f} rel="preload" as="image" type="image/webp" href={`/hero/m-${f}.webp`} media="(max-width:760px),(max-aspect-ratio:4/5)" />)}
       </head>
       <body>
         <BagProvider>{children}</BagProvider>

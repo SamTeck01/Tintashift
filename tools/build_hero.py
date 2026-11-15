@@ -59,35 +59,38 @@ def save(name, im, keep, nail, shade):
     m = np.clip(np.stack([q(keep, 6), q(nail, 6), q(ndi.gaussian_filter(shade, 1.3), 3)], -1), 0, 255).astype(np.uint8)
     Image.fromarray(m).save(f"{OUT}/{name}-m.webp", lossless=True, method=6)   # lossless: lossy WebP smears channels
 
-layers, device, ref_area = {}, None, None
-for s in SETS:
-    im, keep, nail, shade = analyse(f"{SRC}/alu-wide-{s}.png")
-    h, w = keep.shape; fade = edge_fade(h, w)
-    if s == "si001":                                     # the master: the hand is the blob touching the top-left corner
-        lab, _ = ndi.label(keep > .5)
-        hand = ndi.binary_dilation(lab == lab[2, 2], iterations=14)
-        if not lab[2, 2]: raise SystemExit("hand not found at the top-left corner of the master")
-        hm = ndi.gaussian_filter(hand.astype(np.float32), 3)
-        device = keep * (1 - hm) > .5
-        save("device", im, keep * (1 - hm), np.zeros_like(keep), 1 - (1 - shade) * (1 - hm) * fade)
-        keep, nail, shade = keep * hm, nail * hm, 1 - (1 - shade) * hm
-        ref_area = float((nail > .5).sum())
-    scale = float(np.clip(np.sqrt(ref_area / max((nail > .5).sum(), 1)), 1, 1.6))
-    # nudge the (scaled) hand up until it no longer touches the device
-    big = np.asarray(Image.fromarray((keep * 255).astype(np.uint8)).resize((round(w * scale), round(h * scale))))[:h, :w] > 127
-    big = ndi.binary_dilation(big, iterations=10); dy = 0
-    while dy > -300 and (np.roll(big, dy, 0)[: h + dy] & device[: h + dy]).any(): dy -= 10
-    layers[s] = {"scale": round(scale, 3), "dy": dy}
-    save(s, im, keep, nail, 1 - (1 - shade) * fade)
-    print(s, layers[s])
-for path in sorted(glob.glob(f"{SRC}/alu-close-*.png")):
-    name = "close-" + os.path.basename(path)[10:-4]
-    im, keep, nail, shade = analyse(path)
-    # the Shifter's white rim and pale aluminium read as backdrop to the cut-out model, which left a glowing
-    # white patch where the nail enters; fill every hole inside the subject so the whole device stays solid
-    # fill small holes in the device (its pale aluminium and white rim read as backdrop), but not the gap of
-    # table between finger and device, which carries green light bounced off the nail
-    solid = ndi.binary_fill_holes(keep > .35) & ~ndi.binary_dilation(nail > .3, iterations=6)
-    keep = np.maximum(keep, ndi.gaussian_filter(solid.astype(np.float32), 1.2))
-    save(name, im, keep, nail, shade); print(name)
-json.dump({"w": w, "h": h, "sets": layers, "closeups": [os.path.basename(p)[10:-4] for p in sorted(glob.glob(f"{SRC}/alu-close-*.png"))]}, open("lib/hero-layers.json", "w"), indent=1)
+def build(src, pre):
+    """src: source file prefix (alu = desktop 16:9, mob = phone 9:16); pre: output name prefix ('' or 'm-')."""
+    layers, device, ref_area, w, h = {}, None, None, 0, 0
+    for s in SETS:
+        im, keep, nail, shade = analyse(f"{SRC}/{src}-wide-{s}.png")
+        h, w = keep.shape; fade = edge_fade(h, w)
+        if s == "si001":                                 # the master: the hand is the blob touching the left edge
+            lab, _ = ndi.label(keep > .5)
+            ids = [i for i in np.unique(lab[:, 0]) if i]
+            if not ids: raise SystemExit(f"hand not found at the left edge of {src}-wide-si001")
+            hand = ndi.binary_dilation(np.isin(lab, ids), iterations=14)
+            hm = ndi.gaussian_filter(hand.astype(np.float32), 3)
+            device = keep * (1 - hm) > .5
+            save(pre + "device", im, keep * (1 - hm), np.zeros_like(keep), 1 - (1 - shade) * (1 - hm) * fade)
+            keep, nail, shade = keep * hm, nail * hm, 1 - (1 - shade) * hm
+            ref_area = float((nail > .5).sum())
+        scale = float(np.clip(np.sqrt(ref_area / max((nail > .5).sum(), 1)), 1, 1.6))
+        big = np.asarray(Image.fromarray((keep * 255).astype(np.uint8)).resize((round(w * scale), round(h * scale))))[:h, :w] > 127
+        big = ndi.binary_dilation(big, iterations=10); dy = 0
+        while dy > -300 and (np.roll(big, dy, 0)[: h + dy] & device[: h + dy]).any(): dy -= 10
+        layers[s] = {"scale": round(scale, 3), "dy": dy}
+        save(pre + s, im, keep, nail, 1 - (1 - shade) * fade)
+        print(src, s, layers[s])
+    closes = sorted(glob.glob(f"{SRC}/{src}-close-*.png"))
+    for path in closes:
+        name = pre + "close-" + os.path.basename(path)[len(src) + 7:-4]
+        im, keep, nail, shade = analyse(path)
+        solid = ndi.binary_fill_holes(keep > .35) & ~ndi.binary_dilation(nail > .3, iterations=6)
+        keep = np.maximum(keep, ndi.gaussian_filter(solid.astype(np.float32), 1.2))
+        save(name, im, keep, nail, shade); print(name)
+    return {"w": w, "h": h, "sets": layers, "closeups": [os.path.basename(p)[len(src) + 7:-4] for p in closes]}
+
+desk = build("alu", "")
+desk["mobile"] = build("mob", "m-")
+json.dump(desk, open("lib/hero-layers.json", "w"), indent=1)

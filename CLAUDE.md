@@ -43,6 +43,10 @@ VERNIS by Ascenta Studio, https://ascentastudio.com/vernis/. SamTeck supplied it
 - `lib/shades.ts`: colour presets, hero nail sets, products, `surface()`. `lib/shopify.ts` + `components/Bag.tsx`: catalogue, bag, checkout link. `app/layout.tsx`: hero preload, Vercel Analytics and Speed Insights.
 - `components/Logo.tsx`, `components/Sections.tsx` as before. Headless screenshots: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
 
+## Phones (15 Nov 2026, following the reference)
+- Phones and upright tablets use their own portrait 9:16 photographs (`docs/source-images/mob-*.png`, built to `public/hero/m-*`), exactly as the reference does with its `m-` images. The hero stays one full screen: hand and Shifter in the top half, copy and panel overlaid on the empty surface below. `isPhone()` in `HeroScene.tsx` and the `(max-width:760px),(max-aspect-ratio:4/5)` rule in `globals.css` must agree.
+- `tools/build_hero.py` builds both sets (`build("alu","")` and `build("mob","m-")`); `lib/hero-layers.json` has the phone values under `mobile`.
+
 ## Open after the rebuild
 - **Close-ups for the other four sets** were not generated: Figma AI credits ran out on 14 Nov (they reset daily at 00:00 UTC). Prompt: the close-up prompt in the Figma file history with only the nail decoration changed. Until then the close-up always shows the bow set.
 - **No motion video** into the close-up; needs a video model (Weave was still not linked on 14 Nov).

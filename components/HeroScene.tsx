@@ -8,9 +8,11 @@ import layers from "@/lib/hero-layers.json";
    are and where the nails are. The surface takes the picked colour, shadows multiply onto it, and the nails
    (painted a green key colour in the photos) are repainted in the picked colour. See tools/build_hero.py. */
 
-const IMG_W = layers.w, IMG_H = layers.h;
 type SetId = keyof typeof layers.sets;
-const CLOSE = "close-" + layers.closeups[0];
+// Phones get their own portrait (9:16) photographs, as on the reference, so nothing of the picture is lost.
+const DESK = { pre: "", w: layers.w, h: layers.h, sets: layers.sets, close: "close-" + layers.closeups[0] };
+const MOB = { pre: "m-", w: layers.mobile.w, h: layers.mobile.h, sets: layers.mobile.sets as typeof layers.sets, close: "m-close-" + layers.mobile.closeups[0] };
+const isPhone = (w: number, h: number) => w / h < 0.8 || w <= 760;
 
 const VS = `attribute vec2 p;varying vec2 v;void main(){v=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}`;
 const FS = `precision highp float;varying vec2 v;
@@ -70,7 +72,6 @@ export default function HeroScene({ tint, nail, set, close, onPick }: { tint: st
     const ap = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(ap); gl.vertexAttribPointer(ap, 2, gl.FLOAT, false, 0, 0);
     const U = (n: string) => gl.getUniformLocation(pr, n);
     ["dP", "dM", "aP", "aM", "bP", "bM", "cP", "cM"].forEach((n, i) => gl.uniform1i(U(n), i));
-    gl.uniform2f(U("img"), IMG_W, IMG_H);
 
     let dead = false, queued = false;
     const tex: Record<string, WebGLTexture> = {}, pending: Record<string, Promise<void>> = {};
@@ -90,28 +91,31 @@ export default function HeroScene({ tint, nail, set, close, onPick }: { tint: st
     const cur = { tint: rgb(tint), nail: rgb(nail) }, goal = { tint: rgb(tint), nail: rgb(nail) };
     let A: SetId = set, B: SetId | null = null, swap = 1, swapFrom = 0;   // swap 0..1: hand A leaves, hand B arrives
     let shot = close ? 1 : 0, shotGoal = shot;                            // 0 opening shot, 1 close-up
-    let view = [0, 0, 1], cview = [0, 0, 1], W = 1, H = 1, phone = false;
+    let view = [0, 0, 1], cview = [0, 0, 1], W = 1, H = 1, phone = false, L = DESK;
     const ease = (t: number) => 1 - Math.pow(1 - t, 3), io = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
     const measure = () => {
       const r = cv.getBoundingClientRect(); W = r.width; H = r.height;
       const dpr = Math.min(devicePixelRatio || 1, 2);
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); gl.viewport(0, 0, cv.width, cv.height);
-      phone = W / H < 0.8 || W <= 760;
-      if (phone) {                             // phones and upright tablets: the picture across the top, under the nav
-        const f = W / (IMG_W * 0.66); view = [-0.02 * IMG_W * f, 58, f];
-        const g = W / (IMG_W * 0.62); cview = [W / 2 - 0.55 * IMG_W * g, 58, g];
+      phone = isPhone(W, H);
+      const next = phone ? MOB : DESK;
+      if (next !== L) { L = next; load(L.pre + "device"); load(L.pre + A); }
+      gl.uniform2f(U("img"), L.w, L.h);
+      if (phone) {
+        // the portrait photo fills the screen (cover), anchored to the top: hand and Shifter sit in the top half,
+        // the copy and the panel sit over the empty surface below, like the reference on a phone
+        const f = Math.max(W / L.w, H / L.h); view = [(W - L.w * f) / 2, Math.min(0, (H - L.h * f) * 0.15), f];
+        const g = Math.max(W / L.w, H / L.h); cview = [(W - L.w * g) / 2, Math.min(0, (H - L.h * g) * 0.15), g];
       } else {
-        // Wide screens fill the width; squarer screens go a little larger, with plain surface below the picture
-        // (its lower edge fades out). The top edge always meets the top of the screen: the arm is cut there.
-        const byW = W / IMG_W, f = Math.max(byW, Math.min(H / IMG_H, byW * 1.12));
+        const byW = W / L.w, f = Math.max(byW, Math.min(H / L.h, byW * 1.12));
         const panelLeft = W - 28 - Math.min(400, W * 0.34);
-        let x0 = (W - IMG_W * f) * 0.3;
-        x0 = Math.min(x0, panelLeft - 16 - 900 * f);      // the Shifter's nail end (x≈900 in the photo) stays clear of the panel
-        x0 = Math.max(x0, 8 - 420 * f);                   // and its other end (x≈420) stays on screen
-        view = [Math.min(0, x0), Math.min(0, (H - IMG_H * f) * 0.5), f];
-        const g = Math.max(W / IMG_W, H / IMG_H);
-        cview = [Math.min(0, (W - IMG_W * g) * 0.05), (H - IMG_H * g) * 0.5, g];   // device end stays clear of the panel
+        let x0 = (W - L.w * f) * 0.3;
+        x0 = Math.min(x0, panelLeft - 16 - 900 * f);
+        x0 = Math.max(x0, 8 - 420 * f);
+        view = [Math.min(0, x0), Math.min(0, (H - L.h * f) * 0.5), f];
+        const g = Math.max(W / L.w, H / L.h);
+        cview = [Math.min(0, (W - L.w * g) * 0.05), (H - L.h * g) * 0.5, g];
       }
       ask();
     };
@@ -125,20 +129,21 @@ export default function HeroScene({ tint, nail, set, close, onPick }: { tint: st
       if (B) { swap = Math.min(1, (now - swapFrom) / 820); moving = true; if (swap >= 1) { A = B; B = null; swap = 1; } }
       if (shot !== shotGoal) { const step = 0.022 * (shotGoal > shot ? 1 : -1); shot = Math.min(1, Math.max(0, shot + step)); moving = true; }
       const out = B ? ease(Math.min(1, swap * 1.6)) : 0, inn = B ? ease(Math.max(0, swap * 1.6 - 0.6)) : 0;
-      const ready = (s: string) => (tex[s] && tex[s + "-m"] ? 1 : 0);
+      const ready = (s: string) => (tex[L.pre + s] && tex[L.pre + s + "-m"] ? 1 : 0);
+      const close = L.close.slice(L.pre.length);
       // moving in: the opening shot grows towards the fingertips while the close-up settles from slightly large
-      const e = io(shot), zoom = 1 + e * 1.1, px = W * (phone ? 0.5 : 0.42), py = phone ? 58 + W * 0.3 : H * 0.5;
-      const settle = 1.18 - 0.18 * e, cx = W * 0.5, cy = phone ? 58 + W * 0.3 : H * 0.5;
+      const e = io(shot), zoom = 1 + e * 1.1, px = W * (phone ? 0.6 : 0.42), py = H * (phone ? 0.3 : 0.5);
+      const settle = 1.18 - 0.18 * e, cx = W * 0.5, cy = H * (phone ? 0.3 : 0.5);
       gl.uniform2f(U("res"), W, H);
       gl.uniform3f(U("view"), px + (view[0] - px) * zoom, py + (view[1] - py) * zoom, view[2] * zoom);
       gl.uniform3f(U("cview"), cx + (cview[0] - cx) * settle, cy + (cview[1] - cy) * settle, cview[2] * settle);
       gl.uniform3f(U("tint"), cur.tint[0], cur.tint[1], cur.tint[2]); gl.uniform3f(U("nail"), cur.nail[0], cur.nail[1], cur.nail[2]);
       // the hand leaves towards the top-left corner it came from, and the next one arrives from there
-      gl.uniform4f(U("ha"), -150 * out, layers.sets[A].dy - 110 * out, 1 - out, ready(A));
-      gl.uniform4f(U("hb"), B ? -150 * (1 - inn) : 0, B ? layers.sets[B].dy - 110 * (1 - inn) : 0, B ? inn : 0, B ? ready(B) : 0);
-      gl.uniform2f(U("hs"), layers.sets[A].scale, B ? layers.sets[B].scale : 1);
-      gl.uniform2f(U("shot"), smooth(e), ready(CLOSE));
-      bind(0, "device"); bind(1, "device-m"); bind(2, A); bind(3, A + "-m"); bind(4, B); bind(5, B ? B + "-m" : null); bind(6, CLOSE); bind(7, CLOSE + "-m");
+      gl.uniform4f(U("ha"), -150 * out, L.sets[A].dy - 110 * out, 1 - out, ready(A));
+      gl.uniform4f(U("hb"), B ? -150 * (1 - inn) : 0, B ? L.sets[B].dy - 110 * (1 - inn) : 0, B ? inn : 0, B ? ready(B) : 0);
+      gl.uniform2f(U("hs"), L.sets[A].scale, B ? L.sets[B].scale : 1);
+      gl.uniform2f(U("shot"), smooth(e), ready(close));
+      const P = L.pre; bind(0, P + "device"); bind(1, P + "device-m"); bind(2, P + A); bind(3, P + A + "-m"); bind(4, B && P + B); bind(5, B ? P + B + "-m" : null); bind(6, L.close); bind(7, L.close + "-m");
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       if (moving) ask();
     };
@@ -147,13 +152,14 @@ export default function HeroScene({ tint, nail, set, close, onPick }: { tint: st
 
     api.current = {
       colour: (t, p) => { goal.tint = rgb(t); goal.nail = rgb(p); ask(); },
-      set: (s) => { if (s === (B ?? A)) return; load(s).then(() => { if (dead) return; if (B) A = B; B = s; swapFrom = performance.now(); ask(); }); },
-      close: (on) => { if (on) load(CLOSE).then(() => { shotGoal = 1; ask(); }); else { shotGoal = 0; ask(); } },
+      set: (s) => { if (s === (B ?? A)) return; load(L.pre + s).then(() => { if (dead) return; if (B) A = B; B = s; swapFrom = performance.now(); ask(); }); },
+      close: (on) => { if (on) load(L.close).then(() => { shotGoal = 1; ask(); }); else { shotGoal = 0; ask(); } },
     };
     measure(); addEventListener("resize", measure);
-    load("device").then(ask); load(A).then(ask);
+    L = isPhone(innerWidth, innerHeight) ? MOB : DESK;
+    load(L.pre + "device").then(ask); load(L.pre + A).then(ask);
     // everything else loads once the first picture is up, so switching is instant
-    const idle = setTimeout(() => { (Object.keys(layers.sets) as SetId[]).forEach((s) => load(s)); load(CLOSE); }, 1500);
+    const idle = setTimeout(() => { (Object.keys(L.sets) as SetId[]).forEach((s) => load(L.pre + s)); load(L.close); }, 1500);
     return () => { dead = true; clearTimeout(idle); removeEventListener("resize", measure); api.current = null; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

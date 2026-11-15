@@ -25,5 +25,34 @@
  },
  "closeups": [
   "si001"
- ]
+ ],
+ "mobile": {
+  "w": 768,
+  "h": 1376,
+  "sets": {
+   "si001": {
+    "scale": 1.0,
+    "dy": 0
+   },
+   "si002": {
+    "scale": 1.0,
+    "dy": 0
+   },
+   "spotlight": {
+    "scale": 1.0,
+    "dy": -90
+   },
+   "chapter": {
+    "scale": 1.004,
+    "dy": 0
+   },
+   "spectrum": {
+    "scale": 1.0,
+    "dy": -10
+   }
+  },
+  "closeups": [
+   "si001"
+  ]
+ }
 }

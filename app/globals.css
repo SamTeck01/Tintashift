@@ -234,17 +234,24 @@ img{display:block}
 .shop{grid-template-columns:repeat(4,1fr)}
 .prod.feat{grid-column:span 2}
 @media (max-width:1100px){.shop{grid-template-columns:repeat(2,1fr)}}
-/* phones and upright tablets: picture on top, copy under it, panel at the bottom (same rule as HeroScene) */
+/* phones and upright tablets: one full screen like the reference. The portrait photo fills it with hand and
+   Shifter in the top half; copy and panel sit over the empty surface below. Same rule as isPhone() in HeroScene. */
 @media (max-width:760px),(max-aspect-ratio:4/5){
-  .hero{height:auto;min-height:max(100svh,calc(58px + 88vw + 440px))}
-  .hero-copy{top:calc(58px + 88vw)!important;bottom:auto!important;left:16px;right:16px;max-width:none;align-items:flex-start;text-align:left}
-  .shade-name{font-size:40px;margin:8px 0 12px}
+  .hero{height:100svh;min-height:600px}
+  .hero-copy{top:auto!important;bottom:calc(var(--panel-h,172px) + 22px)!important;left:18px;right:18px;max-width:none;align-items:flex-start;text-align:left}
+  .hero-copy .eyebrow{display:none}
+  .shade-name{font-size:clamp(34px,10vw,44px);margin:0 0 12px;flex-direction:row;flex-wrap:wrap;gap:0 .25em}
+  .shade-name br{display:none}
   .shade-note{display:none}
-  .cta-row{margin-top:4px}
-  .panel{left:12px;right:12px;bottom:12px;width:auto;max-width:520px;padding:14px 14px 12px}
-  .panel .dot{width:25px;height:25px}
-  .panel-dots{gap:7px}
-  .panel-sets{margin:0 -14px;padding:2px 14px 4px}
+  .cta-row{margin-top:0;width:100%}
+  .cta-row .pill{flex:1;justify-content:center;height:46px}
+  .cta-row .pill.dark{justify-content:space-between}
+  .panel{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:auto;max-width:520px;padding:12px 12px 10px;gap:8px;border-radius:22px}
+  .panel .dot{width:24px;height:24px}
+  .panel-dots{gap:6px;flex-wrap:nowrap;justify-content:space-between;margin-bottom:2px}
+  .panel-sets{margin:0 -12px;padding:2px 12px 2px}
+  .panel .set{padding:6px 12px 6px 8px}
+  .panel-row:first-child .panel-hex{display:none}
 }
 @media (max-width:760px){
   .shop{grid-template-columns:1fr}
