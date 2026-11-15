@@ -1,0 +1,445 @@
+@font-face{font-family:Manrope;src:url(manrope.woff2) format("woff2");font-weight:200 800;font-display:swap}
+:root{
+  --tono:#b3121f;          /* color del esmalte elegido: lo cambia vernis.js */
+  --tono-claro:#e2525c;
+  --tinta:#f6efe9;
+  --suave:rgba(246,239,233,.62);
+  --cristal:rgba(20,14,16,.38);
+  --borde:rgba(255,255,255,.14);
+  --ease:cubic-bezier(.22,1,.36,1);
+  --papel:#f5eee8;           /* la tienda: papel calido y tinta ciruela */
+  --negro:#2a1a20;
+  --gris:rgba(42,26,32,.64);
+  --linea:rgba(42,26,32,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--papel)}
+html.fija,html.fija body{overflow:hidden}
+body{background:var(--papel);color:var(--tinta);font-family:Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:clip}
+/* la escena (la foto con la mano) ocupa la primera pantalla; la tienda sigue debajo */
+.escena{position:relative;height:100vh;overflow:hidden;background:#0b0809;color:var(--tinta)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+a{color:inherit;text-decoration:none}
+.oculto{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#peli{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;opacity:0;pointer-events:none;transition:opacity .22s}
+#peli.on{opacity:1;transition:none}
+#lienzo{position:absolute;inset:0;width:100%;height:100%;display:block}
+:focus-visible{outline:2px solid var(--tono-claro);outline-offset:4px;border-radius:999px}
+
+/* ── barra ── */
+.barra{position:fixed;inset:0 0 auto 0;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:26px clamp(20px,3.4vw,56px)}
+.marca{font-weight:600;letter-spacing:.42em;font-size:15px}
+.menu{display:flex;gap:34px;font-size:13px;letter-spacing:.06em;color:var(--suave)}
+.menu a{position:relative;padding:6px 0;transition:color .25s}
+.menu a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--tono-claro);transform:scaleX(0);transform-origin:right;transition:transform .35s var(--ease)}
+.menu a:hover{color:var(--tinta)}
+.menu a:hover::after{transform:scaleX(1);transform-origin:left}
+.bolsa{display:flex;align-items:center;gap:10px;height:42px;padding:0 8px 0 16px;border-radius:999px;background:var(--cristal);border:1px solid var(--borde);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);font-size:13px;letter-spacing:.04em;transition:background .25s,border-color .25s,transform .2s var(--ease)}
+.bolsa:hover{background:rgba(40,26,30,.55);border-color:rgba(255,255,255,.26)}
+.bolsa:active{transform:scale(.97)}
+.bolsa svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}
+.cuenta{min-width:26px;height:26px;border-radius:99px;display:grid;place-items:center;font-size:12px;font-weight:600;background:rgba(255,255,255,.1);transition:background .4s,transform .45s var(--ease)}
+.cuenta.llena{background:var(--tono);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.cuenta.salta{transform:scale(1.28)}
+
+/* al bajar a la tienda la barra se vuelve cristal claro (el cristal es para la barra y el pie, no para el contenido) */
+.barra{transition:background .4s,padding .4s var(--ease),color .3s,box-shadow .4s}
+.barra.abajo{color:var(--negro);padding-top:14px;padding-bottom:14px;background:rgba(245,238,232,.72);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);box-shadow:0 1px 0 var(--linea)}
+.barra.abajo .menu{color:var(--gris)}
+.barra.abajo .menu a:hover{color:var(--negro)}
+.barra.abajo .bolsa{background:rgba(255,255,255,.55);border-color:var(--linea);color:var(--negro)}
+.barra.abajo .bolsa:hover{background:rgba(255,255,255,.85)}
+.barra.abajo .cuenta{background:rgba(42,26,32,.08)}
+.barra.abajo .cuenta.llena{background:var(--tono);color:#fff}
+
+/* ── etiquetas de los frascos ── */
+.frascos{list-style:none;position:absolute;inset:0;z-index:2;pointer-events:none}
+.frasco{position:absolute;transform:translate(-50%,0);text-align:center;pointer-events:auto;cursor:pointer;padding:6px 10px 8px;transition:opacity .35s}
+.frasco{text-shadow:0 1px 10px rgba(60,10,10,.28)}
+.frasco .num{display:block;font-size:10.5px;letter-spacing:.24em;color:rgba(255,255,255,.82)}
+.frasco .tn{display:block;font-size:14px;font-weight:500;letter-spacing:.02em;margin-top:4px}
+.frasco .pr{display:block;font-size:12px;color:rgba(255,255,255,.82);margin-top:2px}
+.frasco::after{content:"";display:block;height:1px;margin:8px auto 0;width:0;background:currentColor;transition:width .35s var(--ease)}
+.frasco.sobre::after,.frasco.elegido::after{width:28px}
+.frasco.elegido .num{color:var(--tinta)}
+.frasco.pronto{cursor:default;opacity:.45}
+.frasco.pronto .pr::after{content:" · soon"}
+.frascos.apagado .frasco{opacity:0;pointer-events:none}
+
+/* ── la mano ── */
+.mano{position:absolute;z-index:3;border-radius:40%;cursor:pointer}
+.mano-pista{position:absolute;left:44%;top:38%;display:flex;align-items:center;gap:10px;height:36px;padding:0 16px 0 12px;border-radius:99px;font-size:12.5px;letter-spacing:.06em;background:var(--cristal);border:1px solid var(--borde);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);opacity:0;transform:translateY(6px);transition:opacity .3s,transform .4s var(--ease);white-space:nowrap}
+.mano-pista i{width:10px;height:10px;border-radius:50%;background:var(--tono);box-shadow:0 0 0 0 var(--tono);animation:late 1.8s infinite}
+.mano:hover .mano-pista,.mano:focus-visible .mano-pista{opacity:1;transform:none}
+@keyframes late{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--tono) 70%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+body[data-vista="cerca"] .mano,body.moviendo .mano{display:none}
+.mano.fuera .mano-pista{opacity:0;transform:translateY(6px)}
+.mano{overflow:visible}
+
+/* ── ficha ── */
+/* arriba a la derecha: es la superficie vacia junto a la mano; abajo pisaba los frascos */
+.ficha{position:absolute;z-index:4;right:clamp(20px,3.4vw,56px);top:clamp(110px,15vh,150px);width:min(360px,26vw);text-align:right;transition:opacity .45s,transform .6s var(--ease)}
+body[data-vista="cerca"] .ficha,body.moviendo .ficha{opacity:0;transform:translateY(14px);pointer-events:none}
+.ojo{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--suave)}
+.nombre{font-weight:300;font-size:clamp(38px,4.2vw,64px);letter-spacing:-.02em;line-height:1;margin:12px 0 10px}
+.linea{font-size:14px;color:var(--suave);line-height:1.5}
+.acciones{display:flex;gap:12px;margin-top:22px;align-items:center;justify-content:flex-end}
+.cambia{animation:cambia .55s var(--ease)}
+@keyframes cambia{from{opacity:0;transform:translateY(8px);filter:blur(4px)}}
+
+/* ── EL boton de laca: el color del esmalte, con su brillo ── */
+.laca{position:relative;overflow:hidden;isolation:isolate;height:54px;padding:0 10px 0 24px;border-radius:999px;display:flex;align-items:center;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.34) 0%,rgba(255,255,255,.08) 42%,rgba(0,0,0,0) 52%,rgba(0,0,0,.18) 100%),
+    var(--tono);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -2px 6px rgba(0,0,0,.28),0 10px 26px -10px var(--tono),0 2px 6px rgba(0,0,0,.35);
+  transition:transform .25s var(--ease),box-shadow .35s,background-color .7s var(--ease)}
+.laca-txt{display:flex;align-items:center;gap:16px;font-size:14px;font-weight:600;letter-spacing:.02em;text-shadow:0 1px 1px rgba(0,0,0,.25);transition:transform .35s var(--ease),opacity .25s}
+.laca-precio{height:36px;padding:0 14px;border-radius:99px;display:grid;place-items:center;font-weight:500;background:rgba(0,0,0,.2);box-shadow:inset 0 1px 2px rgba(0,0,0,.25),0 1px 0 rgba(255,255,255,.18)}
+.laca-brillo{position:absolute;inset:-40% auto -40% -60%;width:42%;z-index:-1;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(0) skewX(-18deg);opacity:0}
+.laca:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 6px rgba(0,0,0,.28),0 16px 34px -10px var(--tono),0 2px 6px rgba(0,0,0,.35)}
+.laca:hover .laca-brillo{animation:brillo .85s var(--ease)}
+.laca:active{transform:translateY(0) scale(.975);box-shadow:inset 0 2px 8px rgba(0,0,0,.35),0 6px 16px -10px var(--tono)}
+@keyframes brillo{0%{opacity:1;transform:translateX(0) skewX(-18deg)}100%{opacity:1;transform:translateX(420%) skewX(-18deg)}}
+.laca-ok{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:600;opacity:0;transform:translateY(12px);transition:opacity .25s,transform .35s var(--ease)}
+.laca-ok svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24}
+.laca.hecho .laca-txt{opacity:0;transform:translateY(-12px)}
+.laca.hecho .laca-ok{opacity:1;transform:none}
+.laca.hecho .laca-ok svg{animation:traza .45s .12s var(--ease) forwards}
+@keyframes traza{to{stroke-dashoffset:0}}
+
+/* boton secundario: se llena de laca desde la izquierda */
+.probar{position:relative;overflow:hidden;height:54px;padding:0 20px;border-radius:999px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:border-color .3s,transform .25s var(--ease)}
+.probar::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 50%),var(--tono);clip-path:inset(0 100% 0 0 round 999px);transition:clip-path .5s var(--ease)}
+.probar{isolation:isolate}
+.probar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;transition:transform .35s var(--ease)}
+.probar:hover{border-color:transparent}
+.probar:hover::before{clip-path:inset(0 0 0 0 round 999px)}
+.probar:hover svg{transform:translate(2px,-2px)}
+.probar:active{transform:scale(.975)}
+
+/* ── primer plano ── */
+.cerca{position:absolute;inset:0;z-index:4;pointer-events:none}
+.cerca[hidden]{display:block;visibility:hidden}
+.cerca .volver,.cerca .panel{pointer-events:auto}
+.volver{position:absolute;left:clamp(20px,3.4vw,56px);top:96px;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--cristal);border:1px solid var(--borde);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);opacity:0;transform:translateX(-10px);transition:opacity .4s .25s,transform .5s .25s var(--ease),background .25s}
+.volver svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s var(--ease)}
+.volver:hover{background:rgba(40,26,30,.6)}
+.volver:hover svg{transform:translateX(-3px)}
+.volver:active{transform:scale(.94)}
+.panel{position:absolute;right:clamp(20px,4vw,72px);top:50%;width:min(330px,28vw);padding:30px 28px 28px;border-radius:28px;background:linear-gradient(160deg,rgba(255,255,255,.1),rgba(255,255,255,.03));border:1px solid var(--borde);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 30px 60px -30px rgba(0,0,0,.6);opacity:0;transform:translate(16px,-50%);transition:opacity .45s .3s,transform .7s .3s var(--ease)}
+body[data-vista="cerca"] .volver{opacity:1;transform:none}
+body[data-vista="cerca"] .panel{opacity:1;transform:translate(0,-50%)}
+.panel .nombre{font-size:clamp(34px,3.2vw,48px)}
+.panel .laca{width:100%;justify-content:space-between}
+
+/* gotas de laca: los botones de color */
+.gotas{display:flex;gap:14px;margin:6px 0 26px}
+.gota{position:relative;width:46px;height:46px;border-radius:50%;
+  background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.85) 0 7%,rgba(255,255,255,.18) 15%,transparent 34%),
+             radial-gradient(circle at 60% 80%,rgba(0,0,0,.35),transparent 60%),var(--g);
+  box-shadow:inset 0 -3px 6px rgba(0,0,0,.35),inset 0 2px 2px rgba(255,255,255,.25),0 6px 14px -6px var(--g);
+  transition:transform .3s var(--ease),box-shadow .3s}
+.gota::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:1.5px solid var(--g);opacity:0;transform:scale(.85);transition:opacity .3s,transform .4s var(--ease)}
+.gota:hover{transform:translateY(-3px) scale(1.06)}
+.gota:active{transform:scale(.92)}
+.gota[aria-checked="true"]::after{opacity:1;transform:none;border-color:rgba(255,255,255,.75)}
+.gota .tip{position:absolute;left:50%;top:calc(100% + 10px);transform:translate(-50%,4px);font-size:11px;letter-spacing:.06em;white-space:nowrap;color:var(--suave);opacity:0;transition:opacity .2s,transform .3s var(--ease);pointer-events:none}
+.gota:hover .tip,.gota:focus-visible .tip,.gota[aria-checked="true"] .tip{opacity:1;transform:translate(-50%,0)}
+.gota[aria-checked="true"] .tip{color:var(--tinta)}
+.gota.pronto{opacity:.35;cursor:default}
+.gota.pronto:hover{transform:none}
+
+/* la gotita que vuela a la bolsa */
+.gota-vuela{position:fixed;z-index:9;width:14px;height:14px;border-radius:50% 50% 50% 0;background:var(--tono);box-shadow:inset 0 1px 1px rgba(255,255,255,.6);pointer-events:none;opacity:0}
+
+body.moviendo .frascos .frasco,body[data-vista="cerca"] .frascos .frasco{opacity:0;pointer-events:none}
+
+/* Nu (1-nov): fondo beige claro, el blanco no se leia (contraste 2,2): letras oscuras y cristales claros */
+body.oscura{--tinta:#2b1a12;--suave:rgba(43,26,18,.66);--cristal:rgba(255,248,242,.42);--borde:rgba(60,30,20,.16)}
+body.oscura .frasco{text-shadow:0 1px 8px rgba(255,240,230,.45)}
+body.oscura .frasco .num,body.oscura .frasco .pr{color:rgba(43,26,18,.72)}
+body.oscura .laca-txt,body.oscura .laca-ok{color:#2b1a12;text-shadow:0 1px 0 rgba(255,255,255,.35)}
+body.oscura .laca-precio{background:rgba(255,255,255,.3)}
+body.oscura .probar{border-color:rgba(43,26,18,.3)}
+body.oscura .volver:hover,body.oscura .bolsa:hover{background:rgba(255,248,242,.6)}
+body.oscura .cuenta{background:rgba(43,26,18,.1)}
+/* flecha para bajar a la tienda */
+.baja{position:absolute;z-index:4;left:50%;bottom:22px;width:40px;height:40px;margin-left:-20px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--borde);background:var(--cristal);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:opacity .4s,transform .3s var(--ease)}
+.baja span{width:8px;height:8px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;animation:baja 2.2s var(--ease) infinite}
+.baja:hover{transform:translateY(2px)}
+@keyframes baja{0%,100%{transform:translateY(-4px) rotate(45deg);opacity:.5}50%{transform:translateY(0) rotate(45deg);opacity:1}}
+body[data-vista="cerca"] .baja,body.moviendo .baja{opacity:0;pointer-events:none}
+
+/* ═══ LA TIENDA (1-nov) ═══ */
+.tonos,.cuidado,.marca-sec{color:var(--negro)}
+.ojo2{font-size:11.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--gris);display:flex;align-items:center;gap:12px}
+.ojo2::before{content:"";width:22px;height:1.5px;border-radius:2px;background:var(--tono);transition:background .7s}
+.tonos h2,.cuidado h2,.marca-sec h2,.boletin h2{font-weight:300;letter-spacing:-.03em;line-height:1.02}
+.tonos h2 em,.cuidado h2 em,.marca-sec h2 em{font-style:normal;font-weight:500;color:var(--tono-tinta);transition:color .7s}
+.entra{font-size:16px;line-height:1.6;color:var(--gris);max-width:44ch}
+
+.tonos{padding:clamp(90px,11vw,160px) clamp(20px,4.4vw,72px) clamp(70px,9vw,130px)}
+.cab{display:grid;grid-template-columns:1fr auto;align-items:end;gap:20px 60px;margin-bottom:clamp(40px,5vw,70px)}
+.cab .ojo2{grid-column:1/-1}
+.cab h2{font-size:clamp(44px,6.2vw,104px)}
+.rejilla{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(28px,3vw,44px) clamp(16px,2vw,30px)}
+.tarjeta{--t:#c33;display:flex;flex-direction:column;opacity:0;transform:translateY(28px);transition:opacity .9s var(--ease),transform 1s var(--ease)}
+.tarjeta.vista{opacity:1;transform:none}
+.foto{position:relative;aspect-ratio:3/4;border-radius:22px;overflow:hidden;background:var(--t);cursor:pointer;isolation:isolate;display:block;width:100%}
+.foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .6s var(--ease),transform 1.2s var(--ease)}
+.foto .unas{opacity:0;transform:scale(1.06)}
+.tarjeta:hover .foto .unas,.foto:focus-visible .unas{opacity:1;transform:scale(1)}
+.tarjeta:hover .foto .bote{transform:scale(1.04)}
+.foto .num{position:absolute;left:18px;top:16px;z-index:2;font-size:11px;letter-spacing:.24em;color:rgba(255,255,255,.92);text-shadow:0 1px 6px rgba(0,0,0,.25)}
+.foto .ver{position:absolute;left:14px;bottom:14px;z-index:2;display:flex;align-items:center;gap:8px;height:36px;padding:0 14px 0 12px;border-radius:99px;font-size:12.5px;color:#fff;background:rgba(20,10,14,.28);border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transform:translateY(8px);transition:opacity .35s,transform .45s var(--ease),background .25s}
+.foto .ver i{width:8px;height:8px;border-radius:50%;background:var(--t);box-shadow:0 0 0 2px rgba(255,255,255,.85)}
+.tarjeta:hover .foto .ver,.foto:focus-visible .ver{opacity:1;transform:none}
+.foto:hover .ver{background:rgba(20,10,14,.45)}
+.tarjeta.claro .foto .num{color:rgba(42,26,32,.75);text-shadow:none}
+.info{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:4px 16px;padding:18px 4px 0}
+.info h3{font-size:22px;font-weight:500;letter-spacing:-.01em}
+.info .desc{grid-column:1/-1;font-size:14px;color:var(--gris)}
+.info .precio{font-size:16px;font-weight:500;font-variant-numeric:tabular-nums}
+.info .laca{grid-column:1/-1;margin-top:16px;height:50px;width:100%;justify-content:space-between;padding:0 7px 0 20px;--tono:var(--t)}
+.tarjeta .laca-txt,.tarjeta .laca-ok{color:#fff}
+.tarjeta.claro .laca-txt,.tarjeta.claro .laca-ok{color:var(--negro);text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.tarjeta.claro .laca-precio{background:rgba(255,255,255,.32)}
+.laca-s .laca-txt svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s var(--ease)}
+.laca-s:hover .laca-txt svg{transform:translateX(3px)}
+
+/* como se aplica: la foto de cerca del tono elegido + tres pasos */
+.cuidado{display:grid;grid-template-columns:1.15fr 1fr;gap:clamp(30px,5vw,90px);align-items:center;padding:clamp(40px,5vw,80px) clamp(20px,4.4vw,72px) clamp(90px,11vw,160px)}
+.cuidado-foto{position:relative;aspect-ratio:16/11;border-radius:26px;overflow:hidden;background:var(--tono);transition:background .7s}
+.cuidado-foto img{width:100%;height:100%;object-fit:cover;object-position:40% 60%;transition:opacity .5s}
+.cuidado-txt h2{font-size:clamp(40px,4.6vw,76px);margin:18px 0 clamp(30px,3.6vw,52px)}
+.pasos{list-style:none;border-top:1px solid var(--linea)}
+.pasos li{display:grid;grid-template-columns:56px 1fr;gap:16px;padding:22px 0;border-bottom:1px solid var(--linea)}
+.paso-n{font-size:12px;letter-spacing:.2em;color:var(--gris);padding-top:5px}
+.pasos h3{font-size:19px;font-weight:500;margin-bottom:6px}
+.pasos p{font-size:15px;line-height:1.6;color:var(--gris);max-width:46ch}
+
+/* la marca: una frase grande y cuatro datos */
+.marca-sec{padding:clamp(80px,10vw,150px) clamp(20px,4.4vw,72px);border-top:1px solid var(--linea);text-align:center}
+.marca-sec .ojo2{justify-content:center}
+.marca-sec h2{font-size:clamp(40px,5.6vw,96px);max-width:16ch;margin:22px auto clamp(50px,6vw,90px)}
+.datos{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);max-width:1100px;margin:0 auto;border-top:1px solid var(--linea)}
+.datos li{padding:28px 10px 0;display:flex;flex-direction:column;gap:6px}
+.datos li+li{border-left:1px solid var(--linea)}
+.datos b{font-size:clamp(28px,2.8vw,44px);font-weight:300;letter-spacing:-.02em}
+.datos span{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gris)}
+
+/* el final: la mano del tono elegido de fondo, el boletin encima y el pie de cristal */
+.final{position:relative;isolation:isolate;min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;background:var(--tono);overflow:hidden;color:#fff;transition:background .7s}
+.final-foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:30% 50%;z-index:-1}
+.boletin{align-self:flex-end;width:min(520px,100%);margin:clamp(110px,16vh,190px) clamp(20px,4.4vw,72px) 60px}
+.boletin .ojo2{color:rgba(255,255,255,.8)}
+.boletin .ojo2::before{background:currentColor}
+.boletin h2{font-size:clamp(46px,5.4vw,88px);margin:16px 0 14px}
+.boletin h2 em{font-style:normal;font-weight:500}
+.boletin .entra{color:rgba(255,255,255,.84)}
+.correo{position:relative;display:flex;gap:8px;margin-top:28px;padding:6px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.34);backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);transition:border-color .3s,background .3s,box-shadow .3s}
+.correo:focus-within{border-color:rgba(255,255,255,.8);background:rgba(255,255,255,.2);box-shadow:0 0 0 4px rgba(255,255,255,.12)}
+.correo input{flex:1;min-width:0;height:50px;padding:0 10px 0 20px;border:0;outline:0;background:none;color:inherit;font:inherit;font-size:16px}
+.correo input::placeholder{color:rgba(255,255,255,.72)}
+.correo .laca{height:50px;padding:0 18px 0 22px;flex:none;background:linear-gradient(180deg,#fff,rgba(255,255,255,.86));color:var(--negro);box-shadow:inset 0 1px 0 #fff,0 8px 20px -10px rgba(0,0,0,.4)}
+.correo .laca-txt{text-shadow:none;gap:10px}
+.correo .laca-ok{color:var(--negro)}
+.correo .laca-brillo{background:linear-gradient(100deg,transparent,color-mix(in srgb,var(--tono) 40%,transparent),transparent)}
+.correo-msg{position:absolute;left:22px;top:calc(100% + 10px);font-size:13px;color:rgba(255,255,255,.88)}
+.correo.mal{animation:sacude .4s}
+@keyframes sacude{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+.pie{margin:0 clamp(12px,1.6vw,24px) clamp(12px,1.6vw,24px);padding:clamp(28px,3.4vw,50px) clamp(22px,3vw,48px) 22px;border-radius:28px;background:linear-gradient(160deg,rgba(255,255,255,.2),rgba(255,255,255,.07));border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(26px) saturate(160%);-webkit-backdrop-filter:blur(26px) saturate(160%);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.pie-arriba{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:30px}
+.pie-marca p{margin:14px 0 22px;font-size:14px;color:rgba(255,255,255,.8);max-width:26ch;line-height:1.5}
+.pie .marca{font-size:17px}
+.redes{display:flex;gap:10px}
+.redes a{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(255,255,255,.32);transition:background .3s,border-color .3s,transform .3s var(--ease),color .3s}
+.redes a:hover{background:#fff;border-color:transparent;color:var(--tono);transform:translateY(-3px)}
+.redes svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.pie-col{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.pie-col h3{font-size:11px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.66);margin-bottom:6px}
+.pie-col a,.pie-abajo a{position:relative;font-size:14.5px;color:rgba(255,255,255,.94)}
+.pie-col a::after,.pie-abajo a::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:1px;background:currentColor;transform:scaleX(0);transform-origin:right;transition:transform .35s var(--ease)}
+.pie-col a:hover::after,.pie-abajo a:hover::after{transform:scaleX(1);transform-origin:left}
+.pie-abajo{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:clamp(36px,4vw,60px);padding-top:20px;border-top:1px solid rgba(255,255,255,.22);font-size:13px;color:rgba(255,255,255,.76)}
+.pie-abajo nav{display:flex;gap:22px}
+.pie-abajo a{font-size:13px}
+.pagos{display:flex;gap:8px;flex-wrap:wrap}
+.pagos span{height:26px;padding:0 10px;border-radius:7px;display:grid;place-items:center;font-size:11px;font-weight:600;letter-spacing:.04em;color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08)}
+@media (max-width:1000px){
+  .rejilla{grid-template-columns:repeat(2,1fr)}
+  .cuidado{grid-template-columns:1fr}
+  .pie-arriba{grid-template-columns:1fr 1fr 1fr}
+  .pie-marca{grid-column:1/-1}
+}
+@media (max-width:640px){
+  .cab{grid-template-columns:1fr}
+  .rejilla{gap:30px 10px}
+  .foto{border-radius:16px}
+  .info{padding:12px 2px 0;gap:2px 8px}
+  .info h3{font-size:17px}
+  .info .desc{font-size:12.5px}
+  .info .precio{font-size:14px}
+  .info .laca{height:44px;margin-top:12px;padding:0 6px 0 14px}
+  .info .laca .laca-txt{font-size:12.5px;gap:6px}
+  .info .laca .laca-precio{display:none}
+  .foto .ver{opacity:1;transform:none;height:30px;font-size:11px;padding:0 10px 0 9px;left:10px;bottom:10px}
+  .datos{grid-template-columns:1fr 1fr}
+  .datos li:nth-child(3){border-left:0}
+  .datos li:nth-child(n+3){border-top:1px solid var(--linea);margin-top:24px}
+  .boletin{align-self:stretch;width:auto;margin:auto 20px 44px}
+  .correo .laca{padding:0 14px}
+  .correo .laca-txt>span{display:none}
+  .pie-arriba{grid-template-columns:1fr 1fr;gap:28px 20px}
+  .pie-abajo{flex-direction:column;align-items:flex-start}
+}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01s!important}}
+@media (max-width:760px){.menu{display:none}}
+/* ── MOVIL (1-nov): la misma regla que vernis.js (ancho/alto < 0,8). Fotos 9:16 propias: arriba la mano, en medio los
+   frascos, abajo el fondo liso libre para la ficha; en el primer plano la mano arriba y el panel abajo. ── */
+@media (max-aspect-ratio:4/5){
+  .menu{display:none}
+  .barra{padding:calc(14px + env(safe-area-inset-top)) 18px 14px}
+  .marca{font-size:13px;letter-spacing:.36em}
+  .bolsa{height:38px;padding:0 6px 0 13px;gap:8px}
+  .cuenta{min-width:24px;height:24px}
+  /* etiquetas: solo numero y nombre, pequenas; el precio esta en la ficha */
+  .frasco{padding:4px 2px 6px}
+  .frasco .num{font-size:9px;letter-spacing:.18em}
+  .frasco .tn{font-size:10.5px;margin-top:3px;letter-spacing:0}
+  .frasco .pr{display:none}
+  .frasco::after{margin-top:6px}
+  .frasco.sobre::after,.frasco.elegido::after{width:18px}
+  /* la pista de la mano siempre a la vista (en el movil no hay "pasar por encima") */
+  .mano-pista{left:40%;top:38%;opacity:1;transform:none;height:32px;font-size:11.5px;padding:0 13px 0 10px}
+  .mano.fuera .mano-pista{opacity:1;transform:none}
+  .ficha{left:20px;right:20px;top:auto;bottom:calc(22px + env(safe-area-inset-bottom));width:auto;text-align:left}
+  .nombre{font-size:44px;margin:8px 0 6px}
+  .linea{font-size:13px}
+  .acciones{justify-content:stretch;margin-top:18px;gap:10px}
+  .acciones .laca{flex:1.35;justify-content:space-between;padding:0 7px 0 18px;height:52px}
+  .acciones .probar{flex:1;justify-content:center;height:52px;padding:0 14px}
+  .laca-txt{gap:10px;font-size:13.5px}
+  .laca-precio{height:38px;padding:0 12px}
+  .volver{top:calc(76px + env(safe-area-inset-top));left:18px;width:46px;height:46px}
+  .panel{left:16px;right:16px;top:auto;bottom:calc(16px + env(safe-area-inset-bottom));width:auto;padding:20px 20px 18px;border-radius:24px;transform:translateY(16px)}
+  body[data-vista="cerca"] .panel{transform:none}
+  /* panel bajo para no tapar las unas en moviles bajos; con 6 tonos las gotas van en su propia fila, repartidas */
+  .panel{padding:14px 18px 16px}
+  .panel .ojo{display:none}
+  .panel .nombre{font-size:30px;margin:0 0 12px}
+  .panel .gotas{margin:0 0 14px;gap:0;justify-content:space-between}
+  .panel .gota{width:38px;height:38px}
+  .panel .gota::after{inset:-4px}
+  .panel .gota .tip{display:none}
+}
+
+/* VERNIS: local purchase feedback and a footer that leaves the nails visible. */
+.info .anadir{
+  grid-column:1/-1;justify-self:start;margin-top:16px;
+  display:inline-flex;align-items:center;gap:12px;height:48px;padding:0 12px 0 18px;
+  border-radius:999px;background:var(--negro);color:var(--papel);
+  transition:transform 160ms var(--ease);
+}
+.anadir-texto{position:relative;display:grid;place-items:center;font-size:13px;font-weight:600;white-space:nowrap}
+.anadir-inicial,.anadir-hecho{grid-area:1/1;transition:opacity 160ms,transform 160ms var(--ease)}
+.anadir-hecho{display:flex;align-items:center;justify-content:center;gap:5px;opacity:0;transform:translateY(4px)}
+.anadir-hecho svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.anadir.hecho .anadir-inicial{opacity:0;transform:translateY(-4px)}
+.anadir.hecho .anadir-hecho{opacity:1;transform:none}
+.anadir:active{transform:scale(.97)}
+.anadir:focus-visible{outline:2px solid var(--negro);outline-offset:4px}
+.mini-compra{width:46px;height:44px;flex:none;overflow:hidden;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linejoin:round;stroke-linecap:round}
+.mini-detras,.mini-frente{fill:var(--negro)}
+.mini-frente{stroke-dasharray:0 23 60}
+.mini-tapon{fill:var(--papel);stroke:none}
+.mini-color{fill:var(--t);stroke:var(--papel)}
+.mini-reflejo{stroke:rgba(255,255,255,.7)}
+.mini-pliegue{opacity:.35}
+.mini-bolsa{transform-origin:35px 43px}
+@media(hover:hover) and (pointer:fine){
+  .anadir:hover{transform:translateY(-2px)}
+  .anadir:hover .mini-asa{stroke:var(--t)}
+}
+
+/* The photograph is content, with its full 3:4 composition reserved in the grid. */
+.final{
+  min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  align-items:center;justify-content:normal;gap:0;background:var(--papel);color:var(--negro);
+  overflow:visible;transition:none;
+}
+.final-visual{
+  position:relative;justify-self:center;max-width:460px;width:calc(100% - 100px);
+  margin:64px 0;aspect-ratio:3/4;border-radius:22px;overflow:hidden;
+}
+.final-foto{position:static;display:block;width:100%;height:100%;object-fit:contain;object-position:center;z-index:auto}
+.boletin{align-self:center;justify-self:center;width:calc(100% - 100px);max-width:500px;margin:64px 0}
+.boletin .ojo2{color:var(--gris)}
+.boletin .ojo2::before{display:none}
+.boletin h2{font-size:clamp(40px,4.9vw,76px);line-height:1.06;margin:16px 0 18px}
+.boletin h2 em{font-weight:300}
+.boletin .entra{color:var(--negro);font-size:16px;max-width:30ch}
+.correo{border:0;border-bottom:1px solid var(--negro);padding:0 0 8px;border-radius:0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;gap:12px;box-shadow:none;transition:none}
+.correo:focus-within{background:none;border-color:var(--negro);box-shadow:none}
+.correo input{padding-left:0;color:var(--negro)}
+.correo input::placeholder{color:var(--gris)}
+.correo .laca,.correo .laca:hover{
+  height:48px;padding:0 18px;border-radius:999px;background:var(--negro);color:var(--papel);box-shadow:none;
+}
+.correo .laca-txt,.correo .laca-ok{color:var(--papel);font-size:13px}
+.correo .laca-brillo{display:none}
+.correo-msg{left:0;color:var(--negro);line-height:1.5}
+.pie{
+  grid-column:1/-1;width:100%;margin:0;padding:clamp(32px,4.4vw,64px);
+  border:0;border-radius:0;background:var(--negro);color:var(--papel);
+  backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;
+}
+.pie-col h3{font-size:13px;text-transform:none;letter-spacing:0;color:rgba(246,239,233,.7)}
+.pie-col a{min-height:28px;display:flex;align-items:center}
+.pie-marca p{color:var(--papel)}
+.pie-abajo{margin-top:40px}
+.pie-abajo nav{flex-wrap:wrap}
+@media(max-width:1000px){
+  .final-visual{width:calc(100% - 56px);margin:40px 0}
+  .boletin{width:calc(100% - 56px);margin:40px 0}
+  .correo .laca{padding:0 14px}
+  .correo .laca-txt>span{display:none}
+}
+@media(max-width:640px){
+  .info .anadir{height:44px;padding:0 10px 0 14px;gap:5px;margin-top:12px;max-width:100%}
+  .anadir-texto{font-size:12px}
+  .mini-compra{width:39px;height:40px}
+  .final{grid-template-columns:minmax(0,1fr)}
+  .final-visual{width:calc(100% - 40px);max-width:460px;margin:24px 0 0;border-radius:16px}
+  .boletin{width:calc(100% - 40px);max-width:460px;margin:36px 0 64px}
+  .boletin h2{font-size:clamp(36px,10.2vw,52px)}
+  .boletin .entra{max-width:none}
+  .pie{padding:36px 20px 24px}
+  .pie-arriba{grid-template-columns:1fr 1fr;gap:30px 20px}
+  .pie-marca{grid-column:1/-1}
+  .pie-col a{min-height:32px}
+}
+@media(prefers-reduced-motion:reduce){
+  .anadir,.anadir-inicial,.anadir-hecho{transition:opacity 120ms}
+  .anadir:hover,.anadir:active,.anadir.hecho .anadir-inicial,.anadir.hecho .anadir-hecho{transform:none}
+}
+
+/* Controls enter during the camera move, with no extra delay. */
+.panel{transition:opacity 180ms var(--ease),transform 220ms var(--ease)}
+.volver{transition:opacity 160ms var(--ease),transform 180ms var(--ease)}
+.bolsa,button,[role="button"]{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+@media (max-aspect-ratio:4/5){.bolsa{min-height:44px}}
+@media (pointer:coarse){.panel{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(42,26,32,.94)}}
+@media (pointer:coarse){body.oscura .panel{background:rgba(245,238,232,.96)}}
+@media (min-aspect-ratio:4/5){
+  .panel{width:min(350px,calc(100vw - 40px))}
+  .panel .gotas{gap:10px;justify-content:space-between}
+  .panel .gota{width:38px;height:38px;flex:none}
+}
+
+#scenePoster{position:absolute;inset:0;display:block}
+#scenePoster[hidden]{display:none}
+#scenePoster img{width:100%;height:100%;object-fit:cover}

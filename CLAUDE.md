@@ -1,5 +1,20 @@
 # Tintashift — handover notes
 
+## START HERE (state on 15 Nov 2026, end of the first long session)
+SamTeck moved to a new session. Everything is in this repo on `ccr-a563bc74-rhkfx4` and `main` (kept identical; Vercel production deploys from `ccr-a563bc74-rhkfx4`). The reference site's code is in `docs/reference-site/` (read its README).
+
+How the hero works now (follows the reference):
+- Opening shot: aluminium Shifter + one hand, whole nails in the picked colour, nail-set slider in the panel, **no colour picker** here. Hovering the hand shows "Try it on"; clicking the hand (or the Try it on button) opens the close-up.
+- Close-up: hand with the bow nail slid into the end of the Shifter (`docs/source-images/alu-close-si001.png`, the picture SamTeck said he loves; keep it). Copy and nav clear away, back button top left, panel = "Try it on", colour name, **colour picker**, Add to bag.
+- Phones: own 9:16 photos (`mob-*.png` → `public/hero/m-*`), one full screen, copy and panel over the empty surface.
+
+Next steps SamTeck asked for and not done yet:
+1. Close-ups for the other four nail sets (desktop `alu-close-<set>.png` and phone `mob-close-<set>.png`), same framing as `alu-close-si001.png`. Until then the close-up always shows the bow set.
+2. A real video for the move into the close-up and back, like the reference's `ida-`/`vuelta-` clips. Needs a video model; Weave (Figma) was still not linked.
+3. Check the phone close-up picture (`mob-close-si001.png`) against the desktop one: it was generated separately and has not been reviewed by SamTeck.
+
+Working style SamTeck asked for: he is paying for tokens, so keep turns short, do the work, show one screenshot, don't over-explain. Push to both branches when done without asking. Figma AI credits (image generation) reset daily at 00:00 UTC.
+
 Marketing/storefront site for **TINTAShift** ("Wearable Beauty Technology · live in color"), built by SamTeck for the client contact **Dave**.
 Live: https://tintashift.vercel.app (Vercel project `tintashift`, production branch `ccr-a563bc74-rhkfx4`; every push redeploys).
 
