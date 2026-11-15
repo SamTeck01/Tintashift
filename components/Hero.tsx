@@ -14,7 +14,9 @@ export default function Hero({ products }: { products: Product[] }) {
   const [hex, setHex] = useState(presets[5].hex);
   const [custom, setCustom] = useState("#7c4dff");
   const [set, setSet] = useState<SetId>("si001");
-  const [close, setClose] = useState(false);   // the close-up: hand with a nail in the Shifter
+  const [close, setClose] = useState(false);
+  const [hint, setHint] = useState(false);
+  const [hintAt, setHintAt] = useState<[number, number]>([0, 0]);   // the close-up: hand with a nail in the Shifter
   const closeSet = layers.closeups[0] as SetId;
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { count, add, flash, open } = useBag();
@@ -34,7 +36,8 @@ export default function Hero({ products }: { products: Product[] }) {
   return (
     <section className={`hero ${isLight(bg) ? "ink-dark" : ""} ${close ? "is-close" : ""}`} style={{ background: bg }}>
       {/* the close-up exists for one nail set so far, so it shows that set */}
-      <HeroScene tint={bg} nail={hex} set={close ? closeSet : set} close={close} onPick={close ? undefined : () => setClose(true)} />
+      <HeroScene tint={bg} nail={hex} set={close ? closeSet : set} close={close} onPick={close ? undefined : () => setClose(true)}
+        onHover={(on, x, y) => { setHint(on); if (on) setHintAt([x + 14, y + 14]); }} />
       <div className="hero-shade" />
 
       <header className="nav">
@@ -48,6 +51,7 @@ export default function Hero({ products }: { products: Product[] }) {
         </button>
       </header>
 
+      {!close && <span className={`try-hint ${hint ? "on" : ""}`} style={{ left: hintAt[0], top: hintAt[1] }}><i />Try it on</span>}
       {/* close-up, as on the reference: the copy clears away, a back button sits top left, the panel carries the name */}
       {close && (
         <button className="back glass" onClick={() => setClose(false)} aria-label="Back to the full view">
@@ -69,16 +73,15 @@ export default function Hero({ products }: { products: Product[] }) {
         <p className="shade-note">{close ? `Slide a nail into the ${DEVICE_NAME} and it takes the colour you picked, in seconds.` : `Press-on nails that change colour. Pick a shade, slide a nail into the ${DEVICE_NAME}, and it shifts in seconds.`}</p>
         <div className="cta-row">
           <button className="pill dark" onClick={() => add(device)}>Add to bag <span className="price">{CURRENCY}{device.price}</span></button>
-          <button className="pill outline" onClick={() => setClose(true)}>See it up close</button>
+          <button className="pill outline" onClick={() => setClose(true)}>Try it on</button>
         </div>
       </div>
 
       <motion.div className="panel glass" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8, ease, delay: .2 }}>
         {close && (
           <div className="panel-head">
-            <span className="panel-label">{DEVICE_NAME} · up close</span>
+            <span className="panel-label">Try it on</span>
             <b>{label}</b>
-            <button className="pill dark wide" onClick={() => add(device)}>Add to bag <span className="price">{CURRENCY}{device.price}</span></button>
           </div>
         )}
         <div className="panel-row">
@@ -94,6 +97,7 @@ export default function Hero({ products }: { products: Product[] }) {
             <input type="color" value={custom} onChange={(e) => pickCustom(e.target.value)} aria-label="Pick any colour" />
           </label>
         </div>
+        {close && <button className="pill dark wide" onClick={() => add(device)}>Add to bag <span className="price">{CURRENCY}{device.price}</span></button>}
         <div className="panel-row"><span className="panel-label">Nail set</span>
           {setProduct
             ? <button className="panel-add" onClick={() => add(setProduct)}>Add this set · {CURRENCY}{setProduct.price}</button>

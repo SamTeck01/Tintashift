@@ -304,5 +304,15 @@ img{display:block}
 /* close-up is cleared like the reference: only the picture, the back button and a small panel */
 .hero.is-close .nav-links{opacity:0;pointer-events:none}
 .hero.is-close .panel{width:min(340px,30vw);top:96px;bottom:auto}   /* top right, over empty surface, not over the device */
-.hero.is-close .panel-head .panel-label{display:none}
+
 @media (max-width:760px),(max-aspect-ratio:4/5){.hero.is-close .panel{width:auto;top:auto;bottom:12px}}
+.hero.is-close .panel-row:first-of-type{display:none}
+.hero.is-close .panel-dots{margin:4px 0 8px}
+/* like the reference: colour picker only in the close-up; the opening shot keeps the nail sets */
+.hero:not(.is-close) .panel-row:first-of-type,.hero:not(.is-close) .panel-dots{display:none}
+.hero.is-close .panel-row:nth-of-type(2){display:none}
+.try-hint{position:absolute;z-index:3;pointer-events:none;display:flex;align-items:center;gap:8px;height:34px;padding:0 14px 0 10px;border-radius:999px;font-size:12px;color:#fff;background:rgba(20,16,18,.55);backdrop-filter:blur(8px);opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s var(--ease)}
+.try-hint i{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.3)}
+.try-hint.on{opacity:1;transform:none}
+@media (hover:none){.hero:not(.is-close) .try-hint{opacity:1;transform:none}}
+.hero.is-close .panel-row:last-of-type{display:none}

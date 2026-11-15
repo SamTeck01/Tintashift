@@ -56,7 +56,7 @@ void main(){
 
 const rgb = (hex: string) => { const n = parseInt(hex.slice(1), 16); return [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; };
 
-export default function HeroScene({ tint, nail, set, close, onPick }: { tint: string; nail: string; set: SetId; close: boolean; onPick?: () => void }) {
+export default function HeroScene({ tint, nail, set, close, onPick, onHover }: { tint: string; nail: string; set: SetId; close: boolean; onPick?: () => void; onHover?: (on: boolean, x: number, y: number) => void }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const api = useRef<{ colour: (tint: string, nail: string) => void; set: (s: SetId) => void; close: (on: boolean) => void } | null>(null);
 
@@ -167,5 +167,13 @@ export default function HeroScene({ tint, nail, set, close, onPick }: { tint: st
   useEffect(() => { api.current?.set(set); }, [set]);
   useEffect(() => { api.current?.close(close); }, [close]);
 
-  return <canvas ref={canvas} className={`scene-canvas ${onPick ? "can-pick" : ""}`} onClick={onPick} aria-hidden />;
+  // the hand is in the upper-left part of the picture: hovering there offers "Try it on", clicking opens the close-up
+  const onHand = (e: React.PointerEvent | React.MouseEvent) => {
+    const r = canvas.current!.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    return r.width / r.height < 0.8 || r.width <= 760 ? y < 0.42 : x < 0.68 && y < 0.62 && y < 0.15 + x * 0.9;
+  };
+  return <canvas ref={canvas} className={`scene-canvas ${onPick ? "can-pick" : ""}`} aria-hidden
+    onClick={(e) => { if (onPick && onHand(e)) onPick(); }}
+    onPointerMove={(e) => { const on = !!onPick && onHand(e); onHover?.(on, e.clientX, e.clientY); e.currentTarget.style.cursor = on ? "zoom-in" : "default"; }}
+    onPointerLeave={() => onHover?.(false, 0, 0)} />;
 }
