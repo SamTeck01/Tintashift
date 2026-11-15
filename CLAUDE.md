@@ -9,11 +9,11 @@ How the hero works now (follows the reference):
 - Phones: own 9:16 photos (`mob-*.png` → `public/hero/m-*`), one full screen, copy and panel over the empty surface.
 
 Next steps SamTeck asked for and not done yet:
-1. Close-ups for the other four nail sets (desktop `alu-close-<set>.png` and phone `mob-close-<set>.png`), same framing as `alu-close-si001.png`. Until then the close-up always shows the bow set.
+1. Close-ups: SI002 (stars) desktop done on 15 Nov (`alu-close-si002.png`, needs SamTeck's review). Still missing: spotlight, chapter, spectrum (desktop) and all but si001 on phones. The close-up now follows the chosen set and falls back to si001 when a set has none. **Figma AI credits are monthly: out until 1 Dec 2026.** Weave was still not linked on 15 Nov.
 2. A real video for the move into the close-up and back, like the reference's `ida-`/`vuelta-` clips. Needs a video model; Weave (Figma) was still not linked.
 3. Check the phone close-up picture (`mob-close-si001.png`) against the desktop one: it was generated separately and has not been reviewed by SamTeck.
 
-Working style SamTeck asked for: he is paying for tokens, so keep turns short, do the work, show one screenshot, don't over-explain. Push to both branches when done without asking. Figma AI credits (image generation) reset daily at 00:00 UTC.
+Working style SamTeck asked for: he is paying for tokens, so keep turns short, do the work, show one screenshot, don't over-explain. Push to both branches when done without asking. Figma AI credits reset on the 1st of the month (next: 1 Dec 2026).
 
 Marketing/storefront site for **TINTAShift** ("Wearable Beauty Technology · live in color"), built by SamTeck for the client contact **Dave**.
 Live: https://tintashift.vercel.app (Vercel project `tintashift`, production branch `ccr-a563bc74-rhkfx4`; every push redeploys).

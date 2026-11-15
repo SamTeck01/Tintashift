@@ -17,7 +17,6 @@ export default function Hero({ products }: { products: Product[] }) {
   const [close, setClose] = useState(false);
   const [hint, setHint] = useState(false);
   const [hintAt, setHintAt] = useState<[number, number]>([0, 0]);   // the close-up: hand with a nail in the Shifter
-  const closeSet = layers.closeups[0] as SetId;
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { count, add, flash, open } = useBag();
   const setProduct = products.find((p) => p.id === sets.find((s) => s.id === set)?.product);
@@ -35,8 +34,7 @@ export default function Hero({ products }: { products: Product[] }) {
 
   return (
     <section className={`hero ${isLight(bg) ? "ink-dark" : ""} ${close ? "is-close" : ""}`} style={{ background: bg }}>
-      {/* the close-up exists for one nail set so far, so it shows that set */}
-      <HeroScene tint={bg} nail={hex} set={close ? closeSet : set} close={close} onPick={close ? undefined : () => setClose(true)}
+      <HeroScene tint={bg} nail={hex} set={set} close={close} onPick={close ? undefined : () => setClose(true)}
         onHover={(on, x, y) => { setHint(on); if (on) setHintAt([x + 14, y + 14]); }} />
       <div className="hero-shade" />
 
