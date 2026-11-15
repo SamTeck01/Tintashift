@@ -39,8 +39,15 @@ def analyse(path):
         fit = (A @ np.linalg.lstsq(A[ok], lum.reshape(-1)[ok], rcond=None)[0]).reshape(h, w)
         ok = far & (lum / fit > .985).reshape(-1)
     gd = a[..., 1] - np.maximum(a[..., 0], a[..., 2])
-    nail = ss(.015, .09, gd) * ndi.maximum_filter(matte, 9)
-    return im, np.maximum(matte, nail), nail, np.clip(lum / fit, 0, 1)
+    lo = np.minimum(a[..., 0], a[..., 2])
+    # green light bounced onto the white table and the device rim is bright and only faintly green; it is not
+    # nail, and repainting it turned it into a white glow under the nail. Real nail green has almost no red/blue.
+    green = ss(.015, .09, gd) * ndi.maximum_filter(matte, 9)
+    core = ndi.binary_dilation(ndi.binary_fill_holes(ndi.binary_opening(green > .6, iterations=2)), iterations=2)
+    spill = ss(.015, .06, gd) * ss(.38, .5, lo) * ~core          # only outside the nails: highlights on a nail stay nail
+    nail = green * (1 - spill)
+    keep = np.maximum(matte * (1 - ndi.gaussian_filter(spill, 1.5)), nail)
+    return im, keep, nail, np.clip(lum / fit, 0, 1)
 
 def edge_fade(h, w, px=48):                              # 1 inside, 0 at the right and bottom borders
     yy, xx = np.mgrid[0:h, 0:w]
