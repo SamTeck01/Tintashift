@@ -316,3 +316,33 @@ img{display:block}
 .try-hint.on{opacity:1;transform:none}
 @media (hover:none){.hero:not(.is-close) .try-hint{opacity:1;transform:none}}
 .hero.is-close .panel-row:last-of-type{display:none}
+/* ===== phones, matched to the reference's (max-aspect-ratio:4/5) rules ===== */
+@media (max-width:760px),(max-aspect-ratio:4/5){
+  .nav{padding:calc(14px + env(safe-area-inset-top)) 18px 14px}
+  .bag-btn{height:38px;padding:0 6px 0 13px;gap:8px}
+  .bag-count{min-width:24px;height:24px}
+  /* opening shot: name and two big buttons at the bottom (reference .ficha), nail sets as a slim row just above */
+  .hero-copy{bottom:calc(22px + env(safe-area-inset-bottom))!important;left:20px;right:20px}
+  .shade-name{font-size:44px;margin:0 0 14px}
+  .cta-row{gap:10px}
+  .cta-row .pill{height:52px;font-size:14px}
+  .cta-row .pill.dark{flex:1.35;padding:0 7px 0 18px}
+  .cta-row .pill.outline{flex:1;padding:0 14px}
+  .cta-row .price{height:38px;padding:0 12px}
+  .hero:not(.is-close) .panel{bottom:calc(22px + 44px + 14px + 52px + 18px + env(safe-area-inset-bottom));left:0;right:0;padding:0;border:0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+  .hero:not(.is-close) .panel-row{display:none}
+  .hero:not(.is-close) .panel-sets{margin:0;padding:0 20px 2px}
+  .panel .set{min-height:44px;background:rgba(255,255,255,.16)}
+  /* hand hint always visible on touch screens, on the hand */
+  .hero:not(.is-close) .try-hint{left:40%!important;top:30%!important;opacity:1;transform:none;height:32px;font-size:11.5px}
+  /* close-up: back button under the bar, low panel with name, one row of large drops, Add to bag */
+  .hero .back{top:calc(76px + env(safe-area-inset-top));left:18px;width:46px;height:46px}
+  .hero.is-close .panel{left:16px;right:16px;top:auto;bottom:calc(16px + env(safe-area-inset-bottom));padding:14px 18px 16px;border-radius:24px}
+  .hero.is-close .panel-head .panel-label{display:none}
+  .hero.is-close .panel-head b{font-size:30px}
+  .hero.is-close .panel-dots{gap:0;justify-content:space-between;flex-wrap:nowrap;margin:0 0 14px}
+  .hero.is-close .panel .dot{width:30px;height:30px}
+  .hero.is-close .panel .pill.wide{height:52px}
+}
+.hero.is-close .set-row{display:none!important}
+@media (max-width:760px),(max-aspect-ratio:4/5){.shade-name .any{display:none}}

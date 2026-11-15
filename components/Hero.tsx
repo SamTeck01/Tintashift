@@ -59,7 +59,7 @@ export default function Hero({ products }: { products: Product[] }) {
 
       <div className="hero-copy" aria-hidden={close}>
         <p className="eyebrow">{DEVICE_NAME} · Smart Tips</p>
-        <h1 className="shade-name">Any colour.<br />
+        <h1 className="shade-name"><span className="any">Any colour.</span><br />
           <AnimatePresence mode="wait">
             <motion.span key={label + hex} className="hero-colour"
               initial={{ opacity: 0, y: 12, filter: "blur(6px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -96,7 +96,7 @@ export default function Hero({ products }: { products: Product[] }) {
           </label>
         </div>
         {close && <button className="pill dark wide" onClick={() => add(device)}>Add to bag <span className="price">{CURRENCY}{device.price}</span></button>}
-        <div className="panel-row"><span className="panel-label">Nail set</span>
+        <div className="panel-row set-row"><span className="panel-label">Nail set</span>
           {setProduct
             ? <button className="panel-add" onClick={() => add(setProduct)}>Add this set · {CURRENCY}{setProduct.price}</button>
             : <span className="panel-hex">Concept set</span>}
