@@ -111,7 +111,7 @@ export default function HeroScene({ tint, nail, set, close, onPick }: { tint: st
         x0 = Math.max(x0, 8 - 420 * f);                   // and its other end (x≈420) stays on screen
         view = [Math.min(0, x0), Math.min(0, (H - IMG_H * f) * 0.5), f];
         const g = Math.max(W / IMG_W, H / IMG_H);
-        cview = [Math.min(0, (W - IMG_W * g) * 0.25), (H - IMG_H * g) * 0.5, g];
+        cview = [Math.min(0, (W - IMG_W * g) * 0.05), (H - IMG_H * g) * 0.5, g];   // device end stays clear of the panel
       }
       ask();
     };
