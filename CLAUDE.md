@@ -44,3 +44,6 @@ Generated with Figma's image generator (`generate_image`, model `gemini-3.1-flas
 4. Package the configurator for Dave: one folder `components/configurator/`, an `onAddToBag` hook for his cart, short README.
 5. Polish: reduced motion, keyboard and screen-reader basics, still image if WebGL fails.
 6. Video into the close-up — only if SamTeck links Weave.
+
+## Tests
+`node tests/e2e.js [url]` (Playwright): 17 checks each on desktop and phone: sets, close-up, colours, bag, Shopify checkout link, reload, shop, no sideways scroll, no errors, no broken files. All 34 passed on the live site on 15 Nov 2026.
