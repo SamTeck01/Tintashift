@@ -3,19 +3,27 @@
  "h": 768,
  "sets": {
   "si001": {
-   "dy": -11
+   "scale": 1.0,
+   "dy": 0
   },
   "si002": {
-   "dy": -61
+   "scale": 1.015,
+   "dy": 0
   },
   "spotlight": {
-   "dy": -140
+   "scale": 1.096,
+   "dy": 0
   },
   "chapter": {
-   "dy": -119
+   "scale": 1.087,
+   "dy": -30
   },
   "spectrum": {
+   "scale": 1.074,
    "dy": 0
   }
- }
+ },
+ "closeups": [
+  "si001"
+ ]
 }

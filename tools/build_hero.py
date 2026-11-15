@@ -1,17 +1,19 @@
 """Turn the generated studio photos in docs/source-images into the layers the hero shader blends.
 
-Each source is a photo on a plain white surface: wide-<set>.png (hand, three-quarter view, French tips painted
-pure green as a key colour) and wide-si001.png, which also contains the TINTAShifter.
+Sources (all on a plain white surface, nails painted pure green as a key colour for the picked shade):
+  alu-wide-<set>.png   opening shot, one per nail set; alu-wide-si001.png also contains the aluminium Shifter
+  alu-close-<set>.png  close-up with a nail in the Shifter (only si001 exists so far)
 
 Per layer this writes public/hero/<name>.webp (the photo) and public/hero/<name>-m.webp (maps):
-  R  keep   1 = object keeps its own colour (hand), ~0.55 on the crystal device, 0 = surface
-  G  hand layers: tip mask (where the green key colour is)   |  device layer: specular highlights
+  R  keep   1 = keeps its own colour (hand, device), 0 = surface
+  G  nail   where the green key colour is (repainted in the picked colour)
   B  shade  surface brightness with the backdrop divided out (1 = bare surface, <1 = shadow)
-and lib/hero-layers.json with each hand's vertical nudge so its nails clear the device.
+and lib/hero-layers.json: per set, a scale (so every hand is the size of the first one) and an upward nudge
+(so its nails clear the device).
 
 Usage: python3 tools/build_hero.py     Needs: numpy pillow scipy rembg[cpu]
 """
-import json, os
+import glob, json, os
 import numpy as np
 from PIL import Image
 from scipy import ndimage as ndi
@@ -19,59 +21,60 @@ from rembg import remove, new_session
 
 SRC, OUT = "docs/source-images", "public/hero"
 SETS = ["si001", "si002", "spotlight", "chapter", "spectrum"]
-SPLIT_Y = 446          # in wide-si001.png: hand above this row, device below
-CLEAR_Y = 425          # nails of every set must end above this row
 os.makedirs(OUT, exist_ok=True)
+for f in glob.glob(f"{OUT}/*"): os.remove(f)
 session = new_session("isnet-general-use")
-ss = lambda a, b, x: np.clip((x - a) / (b - a), 0, 1) ** 2 * (3 - 2 * np.clip((x - a) / (b - a), 0, 1))
+def ss(a, b, x):
+    t = np.clip((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t)
 
 def analyse(path):
     im = Image.open(path).convert("RGB")
     a = np.asarray(im).astype(np.float32) / 255
-    matte = np.asarray(remove(im, session=session, only_mask=True)).astype(np.float32) / 255
-    matte = ss(.3, .9, matte)                            # pull the edge in a touch so no white rim comes along
-    lum = a.mean(2)
-    h, w = lum.shape
+    matte = ss(.3, .9, np.asarray(remove(im, session=session, only_mask=True)).astype(np.float32) / 255)
+    lum = a.mean(2); h, w = lum.shape
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32); x, y = xx / w - .5, yy / h - .5
     A = np.stack([np.ones_like(x), x, y, x * x, x * y, y * y], -1).reshape(-1, 6)
-    ok = (ndi.maximum_filter(matte, 25) < .05).reshape(-1)
-    fit = None
+    far = (ndi.maximum_filter(matte, 25) < .05).reshape(-1); ok = far
     for _ in range(4):                                   # fit the backdrop, ignoring shadows
-        coef = np.linalg.lstsq(A[ok], lum.reshape(-1)[ok], rcond=None)[0]
-        fit = (A @ coef).reshape(h, w)
-        ok = (ndi.maximum_filter(matte, 25) < .05).reshape(-1) & (lum / fit > .985).reshape(-1)
-    shade = np.clip(lum / fit, 0, 1.2)
-    return im, a, matte, shade
+        fit = (A @ np.linalg.lstsq(A[ok], lum.reshape(-1)[ok], rcond=None)[0]).reshape(h, w)
+        ok = far & (lum / fit > .985).reshape(-1)
+    gd = a[..., 1] - np.maximum(a[..., 0], a[..., 2])
+    nail = ss(.015, .09, gd) * ndi.maximum_filter(matte, 9)
+    return im, np.maximum(matte, nail), nail, np.clip(lum / fit, 0, 1)
 
-def edge_fade(h, w, px=48):                              # 1 in the middle, 0 at the right and bottom borders
+def edge_fade(h, w, px=48):                              # 1 inside, 0 at the right and bottom borders
     yy, xx = np.mgrid[0:h, 0:w]
     return ss(0, px, w - 1 - xx) * ss(0, px, h - 1 - yy)
 
-def save(name, im, r, g, b):
+def save(name, im, keep, nail, shade):
     im.save(f"{OUT}/{name}.webp", quality=88, method=6)
-    # maps are stored lossless (lossy WebP would smear the channels into each other); a little smoothing
-    # and coarser steps keep them small
     q = lambda v, step: np.round(np.clip(v, 0, 1) * 255 / step) * step
-    m = np.clip(np.stack([q(r, 6), q(g, 6), q(ndi.gaussian_filter(b, 1.3), 3)], -1), 0, 255).astype(np.uint8)
-    Image.fromarray(m).save(f"{OUT}/{name}-m.webp", lossless=True, method=6)
+    m = np.clip(np.stack([q(keep, 6), q(nail, 6), q(ndi.gaussian_filter(shade, 1.3), 3)], -1), 0, 255).astype(np.uint8)
+    Image.fromarray(m).save(f"{OUT}/{name}-m.webp", lossless=True, method=6)   # lossless: lossy WebP smears channels
 
-layers = {}
+layers, device, ref_area = {}, None, None
 for s in SETS:
-    im, a, matte, shade = analyse(f"{SRC}/wide-{s}.png")
-    h, w = matte.shape
-    yy = np.mgrid[0:h, 0:w][0]
-    if s == "si001":                                     # split the master: hand above, device below
-        above = 1 - ss(SPLIT_Y - 5, SPLIT_Y + 5, yy)
-        dm = matte * (1 - above)
-        spec = ss(1.03, 1.12, shade) * dm                 # sparkle only on the crystal itself
-        fade = edge_fade(h, w)
-        save("device", im, dm * .55, spec, 1 - (1 - np.clip(shade, 0, 1)) * (1 - above) * fade)
-        matte, shade = matte * above, 1 - (1 - np.clip(shade, 0, 1)) * above
-    gd = a[..., 1] - np.maximum(a[..., 0], a[..., 2])
-    tip = ss(.015, .09, gd) * ndi.maximum_filter(matte, 9)
-    keep = np.maximum(matte, tip)
-    low = int(np.where(tip > .5)[0].max())
-    layers[s] = {"dy": min(0, CLEAR_Y - low)}
-    save(s, im, keep, tip, 1 - (1 - np.clip(shade, 0, 1)) * edge_fade(h, w))
-    print(s, "lowest tip row", low, "nudge", layers[s]["dy"])
-json.dump({"w": w, "h": h, "sets": layers}, open("lib/hero-layers.json", "w"), indent=1)
+    im, keep, nail, shade = analyse(f"{SRC}/alu-wide-{s}.png")
+    h, w = keep.shape; fade = edge_fade(h, w)
+    if s == "si001":                                     # the master: the hand is the blob touching the top-left corner
+        lab, _ = ndi.label(keep > .5)
+        hand = ndi.binary_dilation(lab == lab[2, 2], iterations=14)
+        if not lab[2, 2]: raise SystemExit("hand not found at the top-left corner of the master")
+        hm = ndi.gaussian_filter(hand.astype(np.float32), 3)
+        device = keep * (1 - hm) > .5
+        save("device", im, keep * (1 - hm), np.zeros_like(keep), 1 - (1 - shade) * (1 - hm) * fade)
+        keep, nail, shade = keep * hm, nail * hm, 1 - (1 - shade) * hm
+        ref_area = float((nail > .5).sum())
+    scale = float(np.clip(np.sqrt(ref_area / max((nail > .5).sum(), 1)), 1, 1.6))
+    # nudge the (scaled) hand up until it no longer touches the device
+    big = np.asarray(Image.fromarray((keep * 255).astype(np.uint8)).resize((round(w * scale), round(h * scale))))[:h, :w] > 127
+    big = ndi.binary_dilation(big, iterations=10); dy = 0
+    while dy > -300 and (np.roll(big, dy, 0)[: h + dy] & device[: h + dy]).any(): dy -= 10
+    layers[s] = {"scale": round(scale, 3), "dy": dy}
+    save(s, im, keep, nail, 1 - (1 - shade) * fade)
+    print(s, layers[s])
+for path in sorted(glob.glob(f"{SRC}/alu-close-*.png")):
+    name = "close-" + os.path.basename(path)[10:-4]
+    im, keep, nail, shade = analyse(path)
+    save(name, im, keep, nail, shade); print(name)
+json.dump({"w": w, "h": h, "sets": layers, "closeups": [os.path.basename(p)[10:-4] for p in sorted(glob.glob(f"{SRC}/alu-close-*.png"))]}, open("lib/hero-layers.json", "w"), indent=1)

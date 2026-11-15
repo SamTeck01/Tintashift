@@ -14,7 +14,7 @@ type Feed = { products: { handle: string; title: string; body_html: string | nul
 const text = (html: string | null) => (html ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
 /** Live catalogue, refreshed every five minutes. Our own picture, badge and bullet points are kept for the
- *  products we know; anything new in Shopify shows up with Shopify's own picture and description. */
+ *  products we know; pictures come from Shopify. */
 export async function getProducts(): Promise<Product[]> {
   try {
     const res = await fetch(`https://${SHOP_DOMAIN}/products.json?limit=100`, { next: { revalidate: 300 }, headers: { "User-Agent": "Mozilla/5.0 (storefront)" } });
@@ -25,8 +25,7 @@ export async function getProducts(): Promise<Product[]> {
       return {
         id: p.handle, variantId: String(v.id), name: known?.name ?? p.title, sub: text(p.body_html) || known?.sub || "",
         price: Number(v.price), available: v.available, badge: known?.badge, items: known?.items ?? [],
-        // the device and the complete set keep our crystal pictures; the nail series use the store's photos
-        img: known && ["tintashifter", "the-complete-shift"].includes(p.handle) ? known.img : p.images[0]?.src ?? known?.img ?? "/img/kit.jpg",
+        img: p.images[0]?.src ?? known?.img ?? "/img/kit.jpg",          // pictures come from the store
       };
     });
     if (!live.length) return fallback;

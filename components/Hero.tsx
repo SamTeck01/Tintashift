@@ -5,6 +5,7 @@ import { presets, sets, surface, isLight, DEVICE_NAME, CURRENCY, type SetId, typ
 import { useBag } from "./Bag";
 import HeroScene from "./HeroScene";
 import Logo from "./Logo";
+import layers from "@/lib/hero-layers.json";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -13,6 +14,8 @@ export default function Hero({ products }: { products: Product[] }) {
   const [hex, setHex] = useState(presets[5].hex);
   const [custom, setCustom] = useState("#7c4dff");
   const [set, setSet] = useState<SetId>("si001");
+  const [close, setClose] = useState(false);   // the close-up: hand with a nail in the Shifter
+  const closeSet = layers.closeups[0] as SetId;
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { count, add, flash, open } = useBag();
   const setProduct = products.find((p) => p.id === sets.find((s) => s.id === set)?.product);
@@ -29,8 +32,9 @@ export default function Hero({ products }: { products: Product[] }) {
   };
 
   return (
-    <section className={`hero ${isLight(bg) ? "ink-dark" : ""}`} style={{ background: bg }}>
-      <HeroScene tint={bg} tip={hex} set={set} />
+    <section className={`hero ${isLight(bg) ? "ink-dark" : ""} ${close ? "is-close" : ""}`} style={{ background: bg }}>
+      {/* the close-up exists for one nail set so far, so it shows that set */}
+      <HeroScene tint={bg} nail={hex} set={close ? closeSet : set} close={close} onPick={close ? undefined : () => setClose(true)} />
       <div className="hero-shade" />
 
       <header className="nav">
@@ -44,7 +48,14 @@ export default function Hero({ products }: { products: Product[] }) {
         </button>
       </header>
 
-      <div className="hero-copy">
+      {/* close-up, as on the reference: the copy clears away, a back button sits top left, the panel carries the name */}
+      {close && (
+        <button className="back glass" onClick={() => setClose(false)} aria-label="Back to the full view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 5l-7 7 7 7" /></svg>
+        </button>
+      )}
+
+      <div className="hero-copy" aria-hidden={close}>
         <p className="eyebrow">{DEVICE_NAME} · Smart Tips</p>
         <h1 className="shade-name">Any colour.<br />
           <AnimatePresence mode="wait">
@@ -55,14 +66,21 @@ export default function Hero({ products }: { products: Product[] }) {
             </motion.span>
           </AnimatePresence>
         </h1>
-        <p className="shade-note">Press-on nails that change colour. Pick a shade, slide a tip into the {DEVICE_NAME}, and it shifts in seconds.</p>
+        <p className="shade-note">{close ? `Slide a nail into the ${DEVICE_NAME} and it takes the colour you picked, in seconds.` : `Press-on nails that change colour. Pick a shade, slide a nail into the ${DEVICE_NAME}, and it shifts in seconds.`}</p>
         <div className="cta-row">
           <button className="pill dark" onClick={() => add(device)}>Add to bag <span className="price">{CURRENCY}{device.price}</span></button>
-          <a className="pill outline" href="#how">How it works <span aria-hidden>↓</span></a>
+          <button className="pill outline" onClick={() => setClose(true)}>See it up close</button>
         </div>
       </div>
 
       <motion.div className="panel glass" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8, ease, delay: .2 }}>
+        {close && (
+          <div className="panel-head">
+            <span className="panel-label">{DEVICE_NAME} · up close</span>
+            <b>{label}</b>
+            <button className="pill dark wide" onClick={() => add(device)}>Add to bag <span className="price">{CURRENCY}{device.price}</span></button>
+          </div>
+        )}
         <div className="panel-row">
           <span className="panel-label">Pick a colour</span>
           <span className="panel-hex">{hex.toUpperCase()}</span>
@@ -83,8 +101,8 @@ export default function Hero({ products }: { products: Product[] }) {
         </div>
         <div className="panel-sets" role="radiogroup" aria-label="Nail set">
           {sets.map((s) => (
-            <button key={s.id} role="radio" aria-checked={set === s.id} className={`set ${set === s.id ? "on" : ""}`} onClick={() => setSet(s.id)}>
-              <span className="set-nail" style={{ ["--b" as string]: s.base ?? hex }} />
+            <button key={s.id} role="radio" aria-checked={set === s.id} className={`set ${set === s.id ? "on" : ""}`} onClick={() => { setSet(s.id); setClose(false); }}>
+              <span className="set-nail" />
               <span className="set-txt"><b>{s.name}</b>{s.tag}</span>
             </button>
           ))}

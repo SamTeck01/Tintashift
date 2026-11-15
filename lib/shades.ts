@@ -14,13 +14,14 @@ export const presets = [
   { name: "Ink", hex: "#16161c" },
 ];
 
-/** Nail sets shown on the hand in the hero. `id` matches a layer in public/hero; `base` colours the little swatch. */
+/** Nail sets shown on the hand in the hero. `id` matches a layer in public/hero. The whole nail takes the picked
+ *  colour; the set decides what sits on top of it. `product` is the Shopify handle the set is sold under. */
 export const sets = [
-  { id: "si001", name: "Signature", tag: "SI001 · Bow", base: "#cdbdec", product: "tinta-signature" },
-  { id: "si002", name: "Signature", tag: "SI002 · Star", base: "#b7a5ad", product: "tinta-signature" },
-  { id: "spotlight", name: "Spotlight", tag: "Sea glass", base: "#a9cbe8", product: "tinta-spotlight" },
-  { id: "chapter", name: "Chapter", tag: "Pearl", base: "#f3dcdd", product: "tinta-chapter" },
-  { id: "spectrum", name: "Spectrum", tag: "Full colour", base: null, product: null },
+  { id: "si001", name: "Signature", tag: "Bows", product: "tinta-signature" },
+  { id: "si002", name: "Signature", tag: "Stars", product: "tinta-signature" },
+  { id: "spotlight", name: "Spotlight", tag: "Shells", product: "tinta-spotlight" },
+  { id: "chapter", name: "Chapter", tag: "Pearls", product: "tinta-chapter" },
+  { id: "spectrum", name: "Spectrum", tag: "Plain", product: null },
 ] as const;
 export type SetId = (typeof sets)[number]["id"];
 
@@ -29,12 +30,12 @@ export type SetId = (typeof sets)[number]["id"];
  *  fails, taken from tintashift.store/products.json in Nov 2026. */
 export type Product = { id: string; variantId: string; name: string; sub: string; price: number; img: string; available: boolean; badge?: string; items: string[] };
 export const products: Product[] = [
-  { id: "tintashifter", variantId: "57823795446086", name: DEVICE_NAME, sub: "The colour-changing device", price: 249, img: "/img/shifter-crystal.jpg", available: true, badge: "The device",
-    items: ["Shifts your Smart Tips to any colour in seconds", "Crystal body with fingertip clip", "Pick the shade in the TINTAShift app"] },
-  { id: "the-complete-shift", variantId: "57823795478854", name: "The Complete Shift", sub: "TINTAShifter and Smart Tips in one set", price: 288, img: "/img/complete-shift.jpg", available: true, badge: "Complete set",
+  { id: "tintashifter", variantId: "57823795446086", name: DEVICE_NAME, sub: "The colour-changing device", price: 249, img: "/img/shifter.jpg", available: true, badge: "The device",
+    items: ["Shifts your Smart Tips to any colour in seconds", "Slim aluminium body; the nail slides into the end", "Pick the shade in the TINTAShift app"] },
+  { id: "the-complete-shift", variantId: "57823795478854", name: "The Complete Shift", sub: "TINTAShifter and Smart Tips in one set", price: 288, img: "/img/kit.jpg", available: true, badge: "Complete set",
     items: ["TINTAShifter and one set of Smart Tips", "Adhesive tabs, alcohol pads, file, crystal cuticle pusher", "Silver aesthetics bag"] },
   { id: "tinta-signature", variantId: "57823795413318", name: "TINTA Signature", sub: "Your personal sense of colour and form", price: 39, img: "/img/series-signature.jpg", available: true,
-    items: ["Almond shape, Swarovski crystals", "Colour shifts at the French tips"] },
+    items: ["Almond shape, Swarovski crystals", "The whole nail shifts colour"] },
   { id: "tinta-spotlight", variantId: "57823795183942", name: "TINTA Spotlight", sub: "For the moments you give your own colour", price: 39, img: "/img/series-spotlight.jpg", available: true,
     items: ["Almond shape, Swarovski crystals", "Colour shifts with the Shifter"] },
   { id: "tinta-chapter", variantId: "57823795216710", name: "TINTA Chapter", sub: "A new chapter, a new expression", price: 39, img: "/img/series-chapter.jpg", available: true,

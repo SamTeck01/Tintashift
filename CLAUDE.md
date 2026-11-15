@@ -35,17 +35,18 @@ VERNIS by Ascenta Studio, https://ascentastudio.com/vernis/. SamTeck supplied it
 - His words (WhatsApp): "keep the style with 1 hand, like in the example", "without putting the finger inside the machine", "no too much animation", "keep the color panel, and then under it you can slide what nails you want to switch it with, like the products", "on the left side is the machine, and then the hand where you can switch the color and also the model / nail set".
 - SamTeck's verdict on the earlier real-time 3D hero (13 Nov): not good enough, looked fake next to the reference and loaded slowly. It was replaced the same day by the photo hero below. He also wants more than the tip to change: the whole surface takes the colour, and the Spectrum set changes the whole nail.
 
-## Code map
-- `components/Hero.tsx`: full-screen hero. Copy top right, glass panel bottom right with the colour dots and the nail-set slider. No scroll animation.
-- `components/HeroScene.tsx`: one WebGL quad, no 3D. It blends a device layer and one hand layer per nail set over a surface in the picked colour: shadows multiply onto the surface, the crystal shows the surface through it, the green key colour on the nails is repainted in the picked colour. Switching set slides the hand out to the top-left and the next one in.
-- `public/hero/<name>.webp` + `<name>-m.webp`: photo and maps (R keep, G tip mask or device sparkle, B shadow) for `device`, `si001`, `si002`, `spotlight`, `chapter`, `spectrum`. `lib/hero-layers.json`: image size and each hand's vertical nudge.
-- `tools/build_hero.py`: builds those layers from `docs/source-images/wide-*.png` (background removal with rembg, backdrop flattening, tip key). Re-run it after adding or replacing a source image.
-- `lib/shades.ts`: colour presets, hero nail sets, the store's seven products and prices, `surface()` (tabletop colour for a picked shade).
-- `lib/shopify.ts`: the Shopify connection (see below). `components/Bag.tsx`: bag state (kept in localStorage) and the bag drawer, which opens whenever something is added.
-- `app/layout.tsx`: preloads the first hero picture; mounts Vercel Analytics and Speed Insights (they report only once switched on in the Vercel dashboard).
-- `components/Logo.tsx`: the brand's chameleon (`public/img/chameleon.png`, cut from their Instagram artwork, low resolution) plus the wordmark set in type.
-- `components/Sections.tsx`: shop, technology, how-to, outfits, newsletter, footer.
-- Headless screenshots: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
+## Code map (current, after the 14–15 Nov rebuild)
+- `components/Hero.tsx`: full-screen hero. Copy top right, glass panel bottom right with colour dots and the nail-set slider. "See it up close" (or clicking the picture) opens the close-up: the copy clears, a back button appears top left, and the panel carries the colour name and Add to bag, as on the reference.
+- `components/HeroScene.tsx`: one WebGL quad, no 3D. Opening shot = device layer + one hand layer per nail set over a surface in the picked colour; close-up = one photo of the hand with a nail in the Shifter. Shadows multiply onto the surface; the green key colour on the nails is repainted in the picked colour (whole nail). Moving to the close-up is a zoom and cross-fade, not a video.
+- `public/hero/`: `device`, `si001`, `si002`, `spotlight`, `chapter`, `spectrum`, `close-si001`, each as `<name>.webp` + `<name>-m.webp` (R keep, G nail, B shadow). `lib/hero-layers.json`: size, per-set scale and nudge, list of close-ups.
+- `tools/build_hero.py`: builds those from `docs/source-images/alu-wide-<set>.png` and `alu-close-<set>.png`. Re-run after adding a picture; a new `alu-close-<set>.png` is picked up automatically, but `Hero.tsx` currently shows only the first close-up.
+- `lib/shades.ts`: colour presets, hero nail sets, products, `surface()`. `lib/shopify.ts` + `components/Bag.tsx`: catalogue, bag, checkout link. `app/layout.tsx`: hero preload, Vercel Analytics and Speed Insights.
+- `components/Logo.tsx`, `components/Sections.tsx` as before. Headless screenshots: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
+
+## Open after the rebuild
+- **Close-ups for the other four sets** were not generated: Figma AI credits ran out on 14 Nov (they reset daily at 00:00 UTC). Prompt: the close-up prompt in the Figma file history with only the nail decoration changed. Until then the close-up always shows the bow set.
+- **No motion video** into the close-up; needs a video model (Weave was still not linked on 14 Nov).
+- The generated Shifter is rounder than the real rounded-triangle bar, and each generated hand differs slightly.
 
 ## Shopify connection (no credentials involved)
 Dave asked on 13 Nov 2026 to connect the site to his Shopify store, tintashift.store. It is connected without a token or admin access:
