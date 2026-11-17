@@ -309,7 +309,7 @@ img{display:block}
 .hero.is-close .panel-row:first-of-type{display:none}
 .hero.is-close .panel-dots{margin:4px 0 8px}
 /* like the reference: colour picker only in the close-up; the opening shot keeps the nail sets */
-.hero:not(.is-close) .panel-row:first-of-type,.hero:not(.is-close) .panel-dots{display:none}
+
 .hero.is-close .panel-row:nth-of-type(2){display:none}
 .try-hint{position:absolute;z-index:3;pointer-events:none;display:flex;align-items:center;gap:8px;height:34px;padding:0 14px 0 10px;border-radius:999px;font-size:12px;color:#fff;background:rgba(20,16,18,.55);backdrop-filter:blur(8px);opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s var(--ease)}
 .try-hint i{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.3)}
@@ -371,3 +371,4 @@ img{display:block}
   .hero.is-close .panel-head b{font-size:24px}
   .hero.is-close .panel .pill.wide{height:40px}
 }
+@media (max-width:760px),(max-aspect-ratio:4/5){.hero:not(.is-close) .panel-dots{padding:0 20px;margin:0 0 10px;justify-content:space-between;flex-wrap:nowrap}.hero:not(.is-close) .panel .dot{width:26px;height:26px}}

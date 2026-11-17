@@ -43,14 +43,14 @@ void main(){
   vec3 dm=mix(off,at(dM,u).rgb,inside(u));
   vec3 am=mix(off,at(aM,ua).rgb,inside(ua)*ha.z*ha.w);
   vec3 bm=mix(off,at(bM,ub).rgb,inside(ub)*hb.z*hb.w);
-  vec3 wide=tint*fall*dm.b*am.b*bm.b;
+  vec3 wide=tint*fall*pow(dm.b*am.b*bm.b,.55);   // generated shadows are too heavy at full strength: soften them
   wide=layer(wide,at(dP,u).rgb,dm);
   wide=layer(wide,at(aP,ua).rgb,am);
   wide=layer(wide,at(bP,ub).rgb,bm);
   // close-up
   vec2 uc=(px-cview.xy)/(cview.z*img);
   vec3 cm=mix(off,at(cM,uc).rgb,inside(uc)*shot.y);
-  vec3 near=layer(tint*fall*cm.b,at(cP,uc).rgb,cm);
+  vec3 near=layer(tint*fall*pow(cm.b,.55),at(cP,uc).rgb,cm);
   gl_FragColor=vec4(mix(wide,near,shot.x*shot.y),1.);
 }`;
 

@@ -61,7 +61,7 @@ export default function Hero({ products }: { products: Product[] }) {
 
       <div className="hero-copy" aria-hidden={close}>
         <p className="eyebrow">{DEVICE_NAME} · Smart Tips</p>
-        <h1 className="shade-name"><span className="any">Any colour.</span><br />
+        <h1 className="shade-name"><span className="any">Any colour.</span>
           <AnimatePresence mode="wait">
             <motion.span key={label + hex} className="hero-colour"
               initial={{ opacity: 0, y: 12, filter: "blur(6px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
