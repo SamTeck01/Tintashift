@@ -47,3 +47,13 @@ Generated with Figma's image generator (`generate_image`, model `gemini-3.1-flas
 
 ## Tests
 `node tests/e2e.js [url]` (Playwright): 17 checks each on desktop and phone: sets, close-up, colours, bag, Shopify checkout link, reload, shop, no sideways scroll, no errors, no broken files. All 34 passed on the live site on 15 Nov 2026.
+
+## NEXT: Blender scene (agreed 18 Nov 2026) — start here in the next session
+Why: AI images/video can't keep the device consistent (two Kling first/last-frame tries, `docs/source-video/`, both morph the device); Weave's free tier allows only 2 runs and is now used up; Figma AI credits are out until 1 Dec. A real 3D scene gives a correct device, a real camera move, and exact per-frame masks so the video recolours live too.
+Plan:
+1. `pip install bpy` (works here; Python 3.13) and use Cycles on CPU (no GPU; long renders run in the background).
+2. Hand: `docs/3d/female-hand-yanix.glb` — "Female Hand" by yanix, Sketchfab, **CC-BY 4.0: credit it on the site**. Scanned shape only: ~193k faces, flat palm-down pose with straight spread fingers, ends at the wrist, **no UVs/textures, not rigged**. Give it a procedural skin material (subsurface). Stand-in until Dave buys the 3D Scan Store "UE5 rigged hand female white 20" (needs FBX/OBJ + skin textures + commercial licence); swapping it must be a one-line change.
+3. Device: model the aluminium Shifter from `docs/reference/shifter-aluminium-*.jpg` (rounded-triangle bar, bead-blasted aluminium, engraved TINTAShift, oval grey button, 2×4 holes, open end with white rim and nail holder).
+4. Nails: almond press-ons fitted on each finger, separate material, with bows / stars / shells / pearls per set.
+5. Render, matching the current framing: opening shot, close-up (nail in the device's open end, finger and device in line), and the move between them (the device turns and slides so its open end meets the fingertip; camera pushes in). Desktop 16:9 and phone 9:16.
+6. Also render passes per frame: nail mask, object mask, shadow — so `HeroScene.tsx` keeps recolouring (table + nails) on stills **and** on the video. Then wire the video in like the reference (`ida`/`vuelta` clips; still photo underneath so the cut is invisible).
