@@ -48,7 +48,14 @@ Generated with Figma's image generator (`generate_image`, model `gemini-3.1-flas
 ## Tests
 `node tests/e2e.js [url]` (Playwright): 17 checks each on desktop and phone: sets, close-up, colours, bag, Shopify checkout link, reload, shop, no sideways scroll, no errors, no broken files. All 34 passed on the live site on 15 Nov 2026.
 
-## NEXT: Blender scene (agreed 18 Nov 2026) — start here in the next session
+## Blender scene — status (18 Nov 2026)
+- `tools/blender/scene.py` builds everything from code (no .blend needed): scanned hand (mirrored to a left hand, + smooth forearm), procedural SSS skin, almond green-key nails with per-set bows/pearls/stars/shells, aluminium Shifter (rounded-triangle bar, engraved TINTA bold / Shift light in Inter from `docs/3d/fonts`, oval button, 2×4 holes, white rim, nail holder), white table, two area lights.
+- `--shot wide|close|move --aspect desktop|phone --set <set> --maps` ; `move` renders the camera push + device turning into the index fingertip (48 frames). `--maps` writes `-id.png` (R keep, G nail).
+- Renders in `docs/3d/renders/` (si001, 64 samples, ~5–10 min each on CPU). Not yet wired into the site; not yet approved by SamTeck.
+- Known to improve: small step where forearm meets the scanned wrist; spread "claw" pose is the scan's; engraving is small at opening-shot distance; video not rendered yet.
+- Credit for the hand is in the footer (`components/Sections.tsx`).
+
+## Original Blender plan (agreed 18 Nov 2026)
 Why: AI images/video can't keep the device consistent (two Kling first/last-frame tries, `docs/source-video/`, both morph the device); Weave's free tier allows only 2 runs and is now used up; Figma AI credits are out until 1 Dec. A real 3D scene gives a correct device, a real camera move, and exact per-frame masks so the video recolours live too.
 Plan:
 1. `pip install bpy` (works here; Python 3.13) and use Cycles on CPU (no GPU; long renders run in the background).

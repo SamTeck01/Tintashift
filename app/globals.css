@@ -144,6 +144,7 @@ img{display:block}
 .foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:28px clamp(16px,4vw,56px);border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 .foot nav{display:flex;gap:20px}
 .foot .logo{color:var(--ink)}
+.foot .credit a{color:inherit;text-decoration:underline}
 
 .scene{position:absolute;inset:0}
 .hero-colour{display:inline-flex;align-items:center;gap:.18em}

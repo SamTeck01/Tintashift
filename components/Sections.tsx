@@ -156,6 +156,10 @@ export function Footer() {
       <p>Wearable Beauty Technology · live in colour</p>
       <nav><a href="#shop">Shop</a><a href="#how">How it works</a><a href="#about">About</a></nav>
       <small>© {new Date().getFullYear()} Tintashift</small>
+      <small className="credit">
+        3D hand: <a href="https://sketchfab.com/yanix" target="_blank" rel="noopener noreferrer">&ldquo;Female Hand&rdquo; by yanix</a>,{" "}
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
+      </small>
     </footer>
   );
 }
