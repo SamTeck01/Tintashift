@@ -75,13 +75,13 @@ def skin_material():
     return m
 
 SKIN = skin_material()
-ALU, alu_p = mat("aluminium", **{"Base Color": (0.90, 0.91, 0.92, 1), "Metallic": 1.0, "Roughness": 0.45,
+ALU, alu_p = mat("aluminium", **{"Base Color": (0.80, 0.81, 0.82, 1), "Metallic": 1.0, "Roughness": 0.62,
                                   "Anisotropic": 0.0})
 _n = ALU.node_tree.nodes
 _nz = _n.new("ShaderNodeTexNoise"); _nz.inputs["Scale"].default_value = 2500
 _bp = _n.new("ShaderNodeBump"); _bp.inputs["Strength"].default_value = 0.05
 link(ALU, _nz.outputs["Fac"], _bp.inputs["Height"]); link(ALU, _bp.outputs["Normal"], alu_p.inputs["Normal"])
-ENGRAVE, _ = mat("engrave", **{"Base Color": (0.42, 0.43, 0.45, 1), "Metallic": 1.0, "Roughness": 0.55})
+ENGRAVE, _ = mat("engrave", **{"Base Color": (0.30, 0.31, 0.33, 1), "Metallic": 1.0, "Roughness": 0.4})
 BUTTON, _ = mat("button", **{"Base Color": (0.62, 0.63, 0.65, 1), "Roughness": 0.35, "Transmission Weight": 0.3})
 HOLE, _ = mat("hole", **{"Base Color": (0.05, 0.05, 0.06, 1), "Roughness": 0.8})
 RIM, _ = mat("rim", **{"Base Color": (0.92, 0.92, 0.91, 1), "Roughness": 0.35, "Subsurface Weight": 0.3})
@@ -126,7 +126,30 @@ xmin = min(v.co.x for v in bm.verts)
 wr = np.array([tuple(v.co) for v in bm.verts if v.co.x < xmin + 0.008])
 WRIST = dict(x=xmin, cy=(wr[:, 1].max() + wr[:, 1].min()) / 2, cz=(wr[:, 2].max() + wr[:, 2].min()) / 2,
              ry=(wr[:, 1].max() - wr[:, 1].min()) / 2, rz=(wr[:, 2].max() - wr[:, 2].min()) / 2)
-bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.x < xmin + 0.007], context="VERTS")   # scanned cuff edge
+bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.x < xmin + 0.012], context="VERTS")   # scanned cuff edge
+# forearm grown out of the open wrist loop: ring 0 is the scan's edge, later rings ease into a smooth ellipse
+edge = [e for e in bm.edges if e.is_boundary]
+loop = list({v for e in edge for v in e.verts})
+cy = sum(v.co.y for v in loop) / len(loop); cz0 = sum(v.co.z for v in loop) / len(loop)
+loop.sort(key=lambda v: math.atan2(v.co.z - cz0, v.co.y - cy))
+x_e = sum(v.co.x for v in loop) / len(loop)
+ry0 = (max(v.co.y for v in loop) - min(v.co.y for v in loop)) / 2
+rz0 = (max(v.co.z for v in loop) - min(v.co.z for v in loop)) / 2
+prev = loop; n = len(loop)
+for k in range(1, 30):
+    t = k / 29; dx = 0.004 * k + 0.00032 * k * k          # dense near the wrist
+    blend = min(1.0, k / 6) ** 1.5; g = 1 + 0.15 * min(1.0, dx / 0.2)
+    ring = []
+    for v0 in loop:
+        a_ = math.atan2(v0.co.z - cz0, v0.co.y - cy)
+        ey, ez = cy + ry0 * g * math.cos(a_), cz0 - dx * 0.05 + rz0 * g * math.sin(a_) * (0.9 if math.sin(a_) < 0 else 1)
+        ring.append(bm.verts.new((x_e - dx, v0.co.y * (1 - blend) + ey * blend, (v0.co.z - dx * 0.05) * (1 - blend) + ez * blend)))
+    for j in range(n):
+        try: bm.faces.new((prev[j], prev[(j + 1) % n], ring[(j + 1) % n], ring[j]))
+        except ValueError: pass
+    prev = ring
+bm.faces.new(prev)
+bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 zmin = min(v.co.z for v in bm.verts if v.co.x > 0.0)
 for v in bm.verts: v.co.z -= zmin - 0.0004
 bm.to_mesh(hand.data); bm.free()
@@ -135,8 +158,8 @@ hand.data.materials.append(SKIN); hand.pass_index = 1; hand.name = "hand"
 def forearm():
     w = WRIST; dz = -(zmin - 0.0004); bm = bmesh.new(); rings = []; n = 48
     for k in range(26):
-        t = k / 25; x = w["x"] + 0.022 - t * 0.27
-        g = 1 + 0.16 * t ** 0.8; ry, rz = w["ry"] * 0.99 * g, w["rz"] * 0.97 * (1 + 0.08 * t)
+        t = k / 25; x = w["x"] + 0.032 - t * 0.28
+        g = 1 + 0.16 * t ** 0.8; ramp = 0.86 + 0.14 * min(1.0, t / 0.12); ry, rz = w["ry"] * ramp * g, w["rz"] * 0.97 * ramp * (1 + 0.08 * t)
         cz = w["cz"] + dz - 0.004 * t
         cz = max(cz, rz + 0.0003)                                 # rests on the table
         rings.append([bm.verts.new((x, w["cy"] + ry * math.cos(2 * math.pi * j / n),
@@ -149,7 +172,6 @@ def forearm():
     o = obj_from_bm("forearm", bm, SKIN, 1)
     sub = o.modifiers.new("s", "SUBSURF"); sub.levels = sub.render_levels = 1
     return o
-FOREARM = forearm()
 for f in hand.data.polygons: f.use_smooth = True
 bvh_bm = bmesh.new(); bvh_bm.from_mesh(hand.data); bvh = BVHTree.FromBMesh(bvh_bm)
 V = np.array([v.co for v in hand.data.vertices])
@@ -362,10 +384,10 @@ def text_obj(body, font, size, x, lateral):
     put_on_face(o, x, lateral, depth=0.0002)
     return o
 
-t1 = text_obj("TINTA", FONT_B, 0.0085, 0.012, 0.0)
+t1 = text_obj("TINTA", FONT_B, 0.011, 0.012, 0.0)
 bpy.context.view_layer.update()
 w1 = t1.dimensions.x
-t2 = text_obj("Shift", FONT_L, 0.0085, 0.010 + w1 + 0.0002, 0.0)
+t2 = text_obj("Shift", FONT_L, 0.011, 0.012 + w1 + 0.0003, 0.0)
 
 def oval(name, cx, a, b, material, h, lateral=0.0):
     bm = bmesh.new(); ring = []
@@ -455,8 +477,8 @@ else:
 
 WIDE = {"desktop": ((-0.05, -0.42, 0.42), (0.11, -0.04, 0.0), 50), "phone": ((0.11, -0.30, 0.40), (0.135, -0.06, 0.0), 58)}
 tipw = FR_IDX[3] + FR_IDX[0] * 0.02
-CLOSE = {"desktop": (tipw + Vector((-0.07, -0.21, 0.13)), tipw + Vector((0.02, 0, -0.005)), 70),
-         "phone": (tipw + Vector((-0.04, -0.17, 0.14)), tipw + Vector((0.005, 0, -0.005)), 70)}
+CLOSE = {"desktop": (tipw + Vector((-0.10, -0.27, 0.17)), tipw + Vector((0.03, 0, -0.005)), 60),
+         "phone": (tipw + Vector((-0.06, -0.24, 0.19)), tipw + Vector((0.015, 0, -0.008)), 60)}
 
 def lerp(a, b, t): return Vector(a).lerp(Vector(b), t)
 
