@@ -51,8 +51,10 @@ Generated with Figma's image generator (`generate_image`, model `gemini-3.1-flas
 ## Blender scene — status (18 Nov 2026)
 - `tools/blender/scene.py` builds everything from code (no .blend needed): scanned hand (mirrored to a left hand, + smooth forearm), procedural SSS skin, almond green-key nails with per-set bows/pearls/stars/shells, aluminium Shifter (rounded-triangle bar, engraved TINTA bold / Shift light in Inter from `docs/3d/fonts`, oval button, 2×4 holes, white rim, nail holder), white table, two area lights.
 - `--shot wide|close|move --aspect desktop|phone --set <set> --maps` ; `move` renders the camera push + device turning into the index fingertip (48 frames). `--maps` writes `-id.png` (R keep, G nail).
-- Renders in `docs/3d/renders/` (si001, 64 samples, ~5–10 min each on CPU). Not yet wired into the site; not yet approved by SamTeck.
-- Known to improve: small step where forearm meets the scanned wrist; spread "claw" pose is the scan's; engraving is small at opening-shot distance; video not rendered yet.
+- Renders in `docs/3d/renders/` (si001, 64 samples, ~5–10 min each on CPU). Not yet approved by SamTeck.
+- Move video: 48 frames, `tools/blender/encode.sh <frames> <''|m->` packs render+ID map into `public/hero3d/{,m-}{ida,vuelta}.mp4` (~200 KB each). Preview page **/3d** (`components/Scene3D.tsx`) plays it with live nail + table recolouring; the live hero is untouched.
+- Fixed 18 Nov: wrist seam, readable engraving, matte aluminium, move path (device spins on the table in front of the fingertips).
+- Still open: spread "claw" pose (the scan's); light fringe at blurred edges in the recolour (DOF vs sharp mask); other four sets not rendered; replacing the AI hero with the renders needs SamTeck's approval.
 - Credit for the hand is in the footer (`components/Sections.tsx`).
 
 ## Original Blender plan (agreed 18 Nov 2026)
