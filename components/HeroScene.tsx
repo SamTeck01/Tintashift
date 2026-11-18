@@ -10,8 +10,10 @@ import layers from "@/lib/hero-layers.json";
 
 type SetId = keyof typeof layers.sets;
 // Phones get their own portrait (9:16) photographs, as on the reference, so nothing of the picture is lost.
-const DESK = { pre: "", w: layers.w, h: layers.h, sets: layers.sets, close: "close-" + layers.closeups[0] };
-const MOB = { pre: "m-", w: layers.mobile.w, h: layers.mobile.h, sets: layers.mobile.sets as typeof layers.sets, close: "m-close-" + layers.mobile.closeups[0] };
+const DESK = { pre: "", w: layers.w, h: layers.h, sets: layers.sets, closeups: layers.closeups as string[] };
+const MOB = { pre: "m-", w: layers.mobile.w, h: layers.mobile.h, sets: layers.mobile.sets as typeof layers.sets, closeups: layers.mobile.closeups as string[] };
+// the close-up of the chosen set, or the first one if that set has none
+const closeOf = (L: typeof DESK, s: string) => L.pre + "close-" + (L.closeups.includes(s) ? s : L.closeups[0]);
 const isPhone = (w: number, h: number) => w / h < 0.8 || w <= 760;
 
 const VS = `attribute vec2 p;varying vec2 v;void main(){v=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}`;
@@ -132,7 +134,7 @@ export default function HeroScene({ tint, nail, set, close, onPick, onHover }: {
       if (shot !== shotGoal) { const step = 0.022 * (shotGoal > shot ? 1 : -1); shot = Math.min(1, Math.max(0, shot + step)); moving = true; }
       const out = B ? ease(Math.min(1, swap * 1.6)) : 0, inn = B ? ease(Math.max(0, swap * 1.6 - 0.6)) : 0;
       const ready = (s: string) => (tex[L.pre + s] && tex[L.pre + s + "-m"] ? 1 : 0);
-      const close = L.close.slice(L.pre.length);
+      const CL = closeOf(L, A), close = CL.slice(L.pre.length);
       // moving in: the opening shot grows towards the fingertips while the close-up settles from slightly large
       const e = io(shot), zoom = 1 + e * 1.1, px = W * (phone ? 0.6 : 0.42), py = H * (phone ? 0.3 : 0.5);
       const settle = 1.18 - 0.18 * e, cx = W * 0.5, cy = H * (phone ? 0.3 : 0.5);
@@ -145,7 +147,7 @@ export default function HeroScene({ tint, nail, set, close, onPick, onHover }: {
       gl.uniform4f(U("hb"), B ? -150 * (1 - inn) : 0, B ? L.sets[B].dy - 110 * (1 - inn) : 0, B ? inn : 0, B ? ready(B) : 0);
       gl.uniform2f(U("hs"), L.sets[A].scale, B ? L.sets[B].scale : 1);
       gl.uniform2f(U("shot"), smooth(e), ready(close));
-      const P = L.pre; bind(0, P + "device"); bind(1, P + "device-m"); bind(2, P + A); bind(3, P + A + "-m"); bind(4, B && P + B); bind(5, B ? P + B + "-m" : null); bind(6, L.close); bind(7, L.close + "-m");
+      const P = L.pre; bind(0, P + "device"); bind(1, P + "device-m"); bind(2, P + A); bind(3, P + A + "-m"); bind(4, B && P + B); bind(5, B ? P + B + "-m" : null); bind(6, CL); bind(7, CL + "-m");
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       if (moving) ask();
     };
@@ -155,13 +157,13 @@ export default function HeroScene({ tint, nail, set, close, onPick, onHover }: {
     api.current = {
       colour: (t, p) => { goal.tint = rgb(t); goal.nail = rgb(p); ask(); },
       set: (s) => { if (s === (B ?? A)) return; load(L.pre + s).then(() => { if (dead) return; if (B) A = B; B = s; swapFrom = performance.now(); ask(); }); },
-      close: (on) => { if (on) load(L.close).then(() => { shotGoal = 1; ask(); }); else { shotGoal = 0; ask(); } },
+      close: (on) => { if (on) load(closeOf(L, B ?? A)).then(() => { shotGoal = 1; ask(); }); else { shotGoal = 0; ask(); } },
     };
     measure(); addEventListener("resize", measure);
     L = isPhone(innerWidth, innerHeight) ? MOB : DESK;
     load(L.pre + "device").then(ask); load(L.pre + A).then(ask);
     // everything else loads once the first picture is up, so switching is instant
-    const idle = setTimeout(() => { (Object.keys(L.sets) as SetId[]).forEach((s) => load(L.pre + s)); load(L.close); }, 1500);
+    const idle = setTimeout(() => { (Object.keys(L.sets) as SetId[]).forEach((s) => load(L.pre + s)); load(closeOf(L, A)); }, 1500);
     return () => { dead = true; clearTimeout(idle); removeEventListener("resize", measure); api.current = null; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

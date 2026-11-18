@@ -21,7 +21,7 @@ Marketing site and nail configurator for **TINTAShift** ("Wearable Beauty Techno
 VERNIS by Ascenta Studio. Code in `docs/reference-site/` (read its README). Not 3D: aligned AI photos cross-faded in a small WebGL shader; a short video plays the camera move into the close-up; phones get their own 9:16 photos (`m-` prefix); `@media (max-aspect-ratio:4/5)` in `vernis.css` is the phone layout.
 
 ## How our hero works (follows the reference)
-- **Opening shot:** aluminium Shifter + hand, nails in the picked colour, nail-set chips. No colour picker here. Hovering the hand shows "Try it on" (always shown on phones); clicking it or the Try it on button opens the close-up.
+- **Opening shot:** aluminium Shifter + hand, nails in the picked colour, colour picker and nail-set chips (picker restored 18 Nov at SamTeck's request). Hovering the hand shows "Try it on" (always shown on phones); clicking it or the Try it on button opens the close-up.
 - **Close-up:** hand with the bow nail slid into the Shifter's end (`docs/source-images/alu-close-si001.png`, approved by SamTeck; keep it). Copy and nav clear; back button top left; panel = colour name, colour drops, Add to bag. Move in/out is a zoom and cross-fade (no video yet).
 - **Phones** (`max-width:760px` or aspect narrower than 4:5; `isPhone()` in `HeroScene.tsx` must match `globals.css`): own portrait pictures, one full screen, name and two 52 px buttons at the bottom, nail-set row above, safe-area padding, as in the reference. The phone close-up (`mob-close-si001.png`) is cropped from the approved desktop close-up and extended downward.
 
@@ -38,7 +38,7 @@ Generated with Figma's image generator (`generate_image`, model `gemini-3.1-flas
 
 ## Approved plan, status
 1. Mobile responsiveness — **done** (matched to the reference's phone rules; checked at 375/390/430/768 px headless, not on real phones).
-2. Close-ups for the other four sets (si002, spotlight, chapter, spectrum), desktop and phone, framed like `alu-close-si001.png` — **waiting for Figma credits**. Until then the close-up always shows the bow set.
+2. Close-ups for the other four sets — **done (19 Nov)**: `alu-close-<set>.png` + `mob-close-<set>.png` (phone = desktop picture on a 768×1376 canvas at y=200). The close-up follows the chosen set (`closeOf()` in `HeroScene.tsx`). Generated on SamTeck's second Figma account (samteck28, file `vpbigExQLUT4K6k0tmgjAq`) with a prompt that pins the device on the finger's diagonal and the opening on its END face; each picture checked (nail in the end, one device, no white parts).
 3. Speed — **mostly done (15 Nov)**. On a phone with slow 4G and a 4× slower CPU: first content 0.93 s, first hero pictures in 1.55 s, 175 KB before the page settles (was 358 KB). Hero photos are WebP quality 80. Not done: still-image fallback while WebGL starts; framer-motion could be dropped to cut JS.
    Overflow: no sideways scroll or overlaps at 320×568, 360, 375, 390, 430, 768, 820, 1024, 1280, 1440, 1920 and a sideways phone (844×390), opening and close-up. Phone hero has no minimum height (it broke 568 px screens); sideways phones have their own compact rules (`max-height:520px`).
 4. Package the configurator for Dave: one folder `components/configurator/`, an `onAddToBag` hook for his cart, short README.

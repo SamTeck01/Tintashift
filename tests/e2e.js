@@ -14,7 +14,7 @@ const ok = (n, c, d = '') => res.push(`${c ? 'PASS' : 'FAIL'}  ${n}${d ? '  (' +
     await pg.waitForTimeout(1500);
     const t = (s) => pg.textContent(s).catch(() => '');
     ok(`${dev}: page loads with canvas`, await pg.isVisible('canvas'));
-    ok(`${dev}: no colour picker on opening shot`, !(await pg.isVisible('.panel-dots')));
+    ok(`${dev}: colour picker on opening shot`, await pg.isVisible('.panel-dots'));
     const sets = await pg.$$('.panel .set');
     ok(`${dev}: 5 nail sets`, sets.length === 5, sets.length);
     await sets[2].click(); await pg.waitForTimeout(900);

@@ -24,7 +24,11 @@
   }
  },
  "closeups": [
-  "si001"
+  "chapter",
+  "si001",
+  "si002",
+  "spectrum",
+  "spotlight"
  ],
  "mobile": {
   "w": 768,
@@ -52,7 +56,11 @@
    }
   },
   "closeups": [
-   "si001"
+   "chapter",
+   "si001",
+   "si002",
+   "spectrum",
+   "spotlight"
   ]
  }
 }
