@@ -373,3 +373,10 @@ img{display:block}
   .hero.is-close .panel .pill.wide{height:40px}
 }
 @media (max-width:760px),(max-aspect-ratio:4/5){.hero:not(.is-close) .panel-dots{padding:0 20px;margin:0 0 10px;justify-content:space-between;flex-wrap:nowrap}.hero:not(.is-close) .panel .dot{width:26px;height:26px}}
+/* /3d: Blender hero preview */
+.s3d{position:relative;height:100svh;overflow:hidden}
+.s3d-cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:pointer}
+.s3d-ui{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;padding:16px 16px max(16px,env(safe-area-inset-bottom))}
+.s3d-drops{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.s3d-drops button{width:28px;height:28px;border-radius:50%;border:2px solid #fff;cursor:pointer}
+.s3d-ui small{width:100%;text-align:center;opacity:.6}
