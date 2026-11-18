@@ -492,9 +492,21 @@ def set_shot(t):
     camo.data.lens = lens; camo.data.dof.focus_distance = (look - loc).length
     camo.data.dof.aperture_fstop = 8.0 - 2.0 * e
     d0, d1 = device_wide(), device_close()
-    l0, r0, _ = d0.decompose(); l1, r1, _ = d1.decompose()
+    l0 = d0.translation; l1 = d1.translation
+    x0, x1 = d0.col[0].xyz, d1.col[0].xyz
+    yaw0, yaw1 = math.atan2(x0.y, x0.x), math.atan2(x1.y, x1.x)
+    while yaw1 < yaw0: yaw1 += 2 * math.pi          # counter-clockwise: the body swings toward the camera, clear of the hand
+    pitch1 = math.asin(max(-1, min(1, x1.z)))
     ed = min(1.0, max(0.0, (t - 0.05) / 0.85)); ed = ed * ed * (3 - 2 * ed)
-    shifter.matrix_world = Matrix.Translation(l0.lerp(l1, ed)) @ r0.slerp(r1, ed).to_matrix().to_4x4()
+    ep = min(1.0, max(0.0, (t - 0.6) / 0.4)); ep = ep * ep * (3 - 2 * ep)     # tilt up only at the end
+    R = Matrix.Rotation(yaw0 + (yaw1 - yaw0) * ed, 4, "Z") @ Matrix.Rotation(-pitch1 * ep, 4, "Y")
+    # keep the device's opening on the path: interpolate the opening point, not the origin
+    oc = Vector((DEV_L, 0, -ZLOW))
+    p0 = d0 @ oc; p1 = d1 @ oc
+    pz = p0.z + (p1.z - p0.z) * ep
+    ctrl = Vector((p1.x + 0.07, p1.y - 0.05, 0))     # pass in front of the fingertips, never through the hand
+    pxy = p0 * (1 - ed) ** 2 + ctrl * 2 * ed * (1 - ed) + p1 * ed ** 2; pxy.z = pz
+    shifter.matrix_world = Matrix.Translation(pxy - R.to_3x3() @ oc) @ R
     HOLDER.hide_render = t > 0.5
 
 S.camera = cam("cam", (0, -0.4, 0.4), (0.1, 0, 0), 50)
